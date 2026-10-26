@@ -1,0 +1,22 @@
+{
+  "name": "mineradio-desktop-lyrics",
+  "version": "0.2.1",
+  "private": false,
+  "license": "GPL-3.0-only",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "start:bridge": "electron . --source=inflink-api --audio=inflink-pcm --frame-rate=30",
+    "demo": "electron . --demo",
+    "test": "node --test tests/*.test.cjs",
+    "build:win": "python tools/package-release.py --output dist/Mineradio-Desktop-Lyrics-0.2.1-win-x64.zip"
+  },
+  "devDependencies": {
+    "electron": "42.4.1"
+  },
+  "description": "保留 Mineradio 桌面歌词效果，由官方网易云客户端负责播放。",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics.git"
+  }
+}

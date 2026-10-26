@@ -1,0 +1,57 @@
+@font-face{font-family:'Instrument Sans';src:local('Instrument Sans Regular'),url('fonts/InstrumentSans-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Instrument Sans';src:local('Instrument Sans Medium'),url('fonts/InstrumentSans-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Instrument Sans';src:local('Instrument Sans SemiBold'),url('fonts/InstrumentSans-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
+:root {
+  --bg: #E6E1FF;
+  --ink: #242143;
+  --muted: #5B5673;
+  --accent: #5145CD;
+  --on-accent: #FFFFFF;
+  --glow-coral: #FF9B8B;
+  --glow-indigo: #6B79FF;
+  --glow-mint: #66E3CD;
+  --glass-surface: rgba(255,255,255,.28);
+  --glass-blur: 18px;
+  --glass-border: rgba(255,255,255,.72);
+  --glass-radius: 24px;
+  --glass-shadow: 0 20px 55px rgba(71,54,120,.22);
+  --glass-surface-strong: rgba(255,255,255,.78);
+  --glass-fallback: #F5F2FF;
+}
+*{box-sizing:border-box}
+html{height:100%;color-scheme:light}
+body{margin:0;min-height:100%;overflow:hidden;isolation:isolate;background:var(--bg);color:var(--ink);font:400 14px/1.6 'Instrument Sans','PingFang SC','Noto Sans SC','Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;padding:24px}
+.ambient{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.ambient i{position:absolute;display:block;width:650px;height:650px;border-radius:50%;filter:blur(76px);opacity:.4}
+.coral{background:var(--glow-coral);left:-300px;top:-190px}
+.indigo{background:var(--glow-indigo);right:-330px;top:50px}
+.mint{background:var(--glow-mint);left:25%;bottom:-500px}
+.glass-panel{position:relative;max-width:1200px;height:calc(100dvh - 48px);margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;border:1px solid var(--glass-border);border-radius:var(--glass-radius);background:var(--glass-surface);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.55);overflow:hidden;animation:appear 220ms cubic-bezier(.22,1,.36,1) both}
+header{padding:30px 32px 24px}
+.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:500;color:var(--muted)}
+h1,h2{font-weight:600;letter-spacing:-.025em}h1{font-size:30px;line-height:1.3;margin:9px 0 8px}h2{font-size:19px;line-height:1.4;margin:0 0 8px}
+p{margin:0;color:var(--muted)}
+.settings-scroll{overflow:auto;scrollbar-gutter:stable;padding:0 28px 26px 32px;scroll-padding-block:16px}
+.settings-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:32px}
+section{min-width:0}.appearance{border-left:1px solid rgba(81,69,205,.14);padding-left:30px}
+.section-description{font-size:13px;min-height:50px;margin-bottom:20px}.token{font-weight:500;color:var(--ink);white-space:nowrap}
+.field{margin-bottom:18px}label{display:block;font-weight:500;margin-bottom:7px}
+input,select,button{font:inherit;color:inherit}input[type=text],select{display:block;width:100%;min-width:0;height:46px;border:1px solid rgba(81,69,205,.24);border-radius:12px;background:var(--glass-surface-strong);padding:10px 12px;line-height:1.6}
+input[type=text]:hover,select:hover{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.color-row{display:flex;align-items:flex-end;gap:14px}.color-row .field:first-child{flex:1}.color-field{flex:0 0 72px}
+input[type=color]{display:block;width:72px;height:46px;border:1px solid rgba(81,69,205,.24);border-radius:12px;background:var(--glass-surface-strong);padding:5px;cursor:pointer}
+input[type=color]:disabled{cursor:default}.hint{font-size:12px;line-height:1.65;background:var(--glass-surface-strong);border-radius:12px;padding:8px 10px}.preview-heading{display:flex;align-items:center;justify-content:space-between;margin-top:26px;margin-bottom:7px}.preview-heading label{margin:0}
+#preview{background:linear-gradient(90deg,#fff 50%,#101318 50%);padding:24px 16px;min-height:154px;display:grid;place-items:center;text-align:center;border-radius:16px;margin:16px 0 10px;font-size:22px;font-weight:600;line-height:1.6;overflow-wrap:anywhere;text-shadow:0 2px 3px #000,0 0 12px var(--preview-glow,#9cffdf);color:var(--preview-ink,#f6fdff);-webkit-text-stroke:.25px rgba(0,0,0,.55)}
+footer{padding:16px 32px 20px;border-top:1px solid rgba(81,69,205,.14);background:rgba(255,255,255,.36)}
+.actions{display:flex;justify-content:flex-end;gap:12px}button{border:1px solid rgba(81,69,205,.32);background:var(--glass-surface-strong);border-radius:12px;padding:10px 18px;min-height:44px;cursor:pointer;font-weight:500;transition:transform 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1)}button:hover{transform:translateY(-2px)}button:active{transform:scale(.98)}button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}button.quiet{background:var(--glass-surface-strong);padding:5px 10px;min-height:32px;color:var(--accent)}
+#notice{font-size:13px;min-height:0;color:var(--ink);overflow-wrap:anywhere}#notice:not(:empty){margin-bottom:10px}.keyboard-help{font-size:11px;margin-top:13px}
+@keyframes appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:780px){body{padding:12px}.glass-panel{height:calc(100dvh - 24px)}header{padding:24px 24px 20px}h1{font-size:26px}.settings-scroll{padding:0 20px 24px 24px}.settings-grid{grid-template-columns:minmax(0,1fr);gap:28px}.appearance{border-left:0;padding-left:0;border-top:1px solid rgba(81,69,205,.14);padding-top:24px}.section-description{min-height:0;margin-bottom:18px}footer{padding:16px 24px}.actions{justify-content:stretch}.actions button{flex:1}.keyboard-help{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}button:hover,button:active{transform:none}}
+@media(prefers-reduced-transparency:reduce){.glass-panel,footer{background:var(--glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}.ambient{display:none}}
+:root[data-transparency=reduce] .glass-panel,:root[data-transparency=reduce] footer{background:var(--glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}:root[data-transparency=reduce] .ambient{display:none}
+@supports not (backdrop-filter:blur(1px)){.glass-panel{background:var(--glass-fallback)}}
+@media(forced-colors:active){.ambient{display:none}.glass-panel,footer{background:Canvas;backdrop-filter:none;box-shadow:none}.glass-panel,input,select,button{border:1px solid CanvasText}:focus-visible{outline-color:Highlight}}
+
+.font-choice{margin-top:24px}
