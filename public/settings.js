@@ -29,9 +29,16 @@ function fontNotice(){
 function fill(value){
   for(const k of Object.keys(value.captions))$(k).value=value.captions[k];
   $('colorMode').value=value.colorMode;$('fixedColor').value=value.fixedColor;
+  $('panelTitle').value=value.panelTitle??'桌面歌词';previewPanelTitle();
   selectFont(value.fontFamily);preview();
 }
-function read(){return {captions:Object.fromEntries(['waiting','instrumental','missing','loading'].map(k=>[k,$(k).value])),colorMode:$('colorMode').value,fixedColor:$('fixedColor').value,fontFamily:$('fontFamily').value}}
+function previewPanelTitle(composing=false){
+  const input=$('panelTitle');
+  if(!composing)input.value=Array.from(input.value).slice(0,40).join('');
+  $('panelTitleHeading').textContent=input.value.trim()||'桌面歌词';
+  $('panelTitleCount').textContent=Array.from(input.value).length+' / 40 字符';
+}
+function read(){return {captions:Object.fromEntries(['waiting','instrumental','missing','loading'].map(k=>[k,$(k).value])),colorMode:$('colorMode').value,fixedColor:$('fixedColor').value,fontFamily:$('fontFamily').value,panelTitle:$('panelTitle').value}}
 function preview(){
   if(!initial)return;
   const p=read(),track=initial.track||{title:'喜欢的歌',artist:'喜欢的歌手'};
@@ -51,7 +58,13 @@ async function loadFonts(){
   catch(_){fontFailure=true;fontNotice()}
 }
 window.lyricSettings.read().then(value=>{initial=value;fill(value.settings);void loadFonts()}).catch(e=>{$('notice').textContent=e.message});
-document.addEventListener('input',preview);$('previewState').addEventListener('change',preview);$('fontFamily').addEventListener('change',preview);
+document.addEventListener('input',event=>{
+  // A title keystroke updates only this panel: no IPC, font scan or lyric preview.
+  if(event.target.id==='panelTitle'){previewPanelTitle(event.isComposing);return}
+  preview();
+});
+$('panelTitle').addEventListener('compositionend',()=>previewPanelTitle());
+$('previewState').addEventListener('change',preview);$('fontFamily').addEventListener('change',preview);
 $('reset').onclick=()=>{fill(initial.defaults);$('notice').textContent='已恢复默认，点击保存后生效。'};
 $('save').onclick=async()=>{try{const saved=await window.lyricSettings.save(read());fill(saved);$('notice').textContent='已保存，重启后仍会保留。'}catch(e){$('notice').textContent='保存失败：'+e.message}};
 $('previewButton').onclick=preview;

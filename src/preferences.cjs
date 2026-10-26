@@ -1,14 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {cleanName}=require('./system-fonts.cjs');
-const defaults = Object.freeze({version:1, captions:{waiting:'等一首喜欢的歌', instrumental:'此刻，让旋律说话', missing:'暂时没有歌词，听听旋律吧', loading:'正在寻找歌词…'}, colorMode:'cover', fixedColor:'#9cffdf',fontFamily:''});
+const defaults = Object.freeze({version:1, captions:{waiting:'等一首喜欢的歌', instrumental:'此刻，让旋律说话', missing:'暂时没有歌词，听听旋律吧', loading:'正在寻找歌词…'}, colorMode:'cover', fixedColor:'#9cffdf',fontFamily:'',panelTitle:'桌面歌词'});
+function normalizePanelTitle(value) {
+  const text=typeof value==='string'?value.replace(/[\u0000-\u001f\u007f]/g,' ').trim():'';
+  return Array.from(text).slice(0,40).join('').trim() || defaults.panelTitle;
+}
 function normalize(value={}) {
   const captions={};
   for(const k of Object.keys(defaults.captions)) {
     const text=value.captions?.[k];
     captions[k]=typeof text==='string'?text.replace(/[\u0000-\u0008\u000b-\u001f]/g,'').slice(0,240):defaults.captions[k];
   }
-  return {version:1,captions,colorMode:value.colorMode==='fixed'?'fixed':'cover',fixedColor:/^#[\da-f]{6}$/i.test(value.fixedColor||'')?value.fixedColor:defaults.fixedColor,fontFamily:cleanName(value.fontFamily)};
+  return {version:1,captions,colorMode:value.colorMode==='fixed'?'fixed':'cover',fixedColor:/^#[\da-f]{6}$/i.test(value.fixedColor||'')?value.fixedColor:defaults.fixedColor,fontFamily:cleanName(value.fontFamily),panelTitle:normalizePanelTitle(value.panelTitle)};
 }
 function load(file) {try{return normalize(JSON.parse(fs.readFileSync(file,'utf8')))}catch{return normalize()}}
 function save(file,value,io=fs) {

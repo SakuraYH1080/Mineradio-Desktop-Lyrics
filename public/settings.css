@@ -1,57 +1,184 @@
-@font-face{font-family:'Instrument Sans';src:local('Instrument Sans Regular'),url('fonts/InstrumentSans-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
-@font-face{font-family:'Instrument Sans';src:local('Instrument Sans Medium'),url('fonts/InstrumentSans-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
-@font-face{font-family:'Instrument Sans';src:local('Instrument Sans SemiBold'),url('fonts/InstrumentSans-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
-:root {
-  --bg: #E6E1FF;
-  --ink: #242143;
-  --muted: #5B5673;
+/* Loaded only by settings.html. Keep every visual rule within the panel. */
+.settings-page {
+  --bg: #E8E1F4;
+  --ink: #252238;
+  --muted: #464052;
   --accent: #5145CD;
   --on-accent: #FFFFFF;
-  --glow-coral: #FF9B8B;
-  --glow-indigo: #6B79FF;
-  --glow-mint: #66E3CD;
-  --glass-surface: rgba(255,255,255,.28);
-  --glass-blur: 18px;
-  --glass-border: rgba(255,255,255,.72);
-  --glass-radius: 24px;
-  --glass-shadow: 0 20px 55px rgba(71,54,120,.22);
-  --glass-surface-strong: rgba(255,255,255,.78);
-  --glass-fallback: #F5F2FF;
-}
-*{box-sizing:border-box}
-html{height:100%;color-scheme:light}
-body{margin:0;min-height:100%;overflow:hidden;isolation:isolate;background:var(--bg);color:var(--ink);font:400 14px/1.6 'Instrument Sans','PingFang SC','Noto Sans SC','Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;padding:24px}
-.ambient{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
-.ambient i{position:absolute;display:block;width:650px;height:650px;border-radius:50%;filter:blur(76px);opacity:.4}
-.coral{background:var(--glow-coral);left:-300px;top:-190px}
-.indigo{background:var(--glow-indigo);right:-330px;top:50px}
-.mint{background:var(--glow-mint);left:25%;bottom:-500px}
-.glass-panel{position:relative;max-width:1200px;height:calc(100dvh - 48px);margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;border:1px solid var(--glass-border);border-radius:var(--glass-radius);background:var(--glass-surface);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.55);overflow:hidden;animation:appear 220ms cubic-bezier(.22,1,.36,1) both}
-header{padding:30px 32px 24px}
-.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:500;color:var(--muted)}
-h1,h2{font-weight:600;letter-spacing:-.025em}h1{font-size:30px;line-height:1.3;margin:9px 0 8px}h2{font-size:19px;line-height:1.4;margin:0 0 8px}
-p{margin:0;color:var(--muted)}
-.settings-scroll{overflow:auto;scrollbar-gutter:stable;padding:0 28px 26px 32px;scroll-padding-block:16px}
-.settings-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:32px}
-section{min-width:0}.appearance{border-left:1px solid rgba(81,69,205,.14);padding-left:30px}
-.section-description{font-size:13px;min-height:50px;margin-bottom:20px}.token{font-weight:500;color:var(--ink);white-space:nowrap}
-.field{margin-bottom:18px}label{display:block;font-weight:500;margin-bottom:7px}
-input,select,button{font:inherit;color:inherit}input[type=text],select{display:block;width:100%;min-width:0;height:46px;border:1px solid rgba(81,69,205,.24);border-radius:12px;background:var(--glass-surface-strong);padding:10px 12px;line-height:1.6}
-input[type=text]:hover,select:hover{border-color:var(--accent)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.color-row{display:flex;align-items:flex-end;gap:14px}.color-row .field:first-child{flex:1}.color-field{flex:0 0 72px}
-input[type=color]{display:block;width:72px;height:46px;border:1px solid rgba(81,69,205,.24);border-radius:12px;background:var(--glass-surface-strong);padding:5px;cursor:pointer}
-input[type=color]:disabled{cursor:default}.hint{font-size:12px;line-height:1.65;background:var(--glass-surface-strong);border-radius:12px;padding:8px 10px}.preview-heading{display:flex;align-items:center;justify-content:space-between;margin-top:26px;margin-bottom:7px}.preview-heading label{margin:0}
-#preview{background:linear-gradient(90deg,#fff 50%,#101318 50%);padding:24px 16px;min-height:154px;display:grid;place-items:center;text-align:center;border-radius:16px;margin:16px 0 10px;font-size:22px;font-weight:600;line-height:1.6;overflow-wrap:anywhere;text-shadow:0 2px 3px #000,0 0 12px var(--preview-glow,#9cffdf);color:var(--preview-ink,#f6fdff);-webkit-text-stroke:.25px rgba(0,0,0,.55)}
-footer{padding:16px 32px 20px;border-top:1px solid rgba(81,69,205,.14);background:rgba(255,255,255,.36)}
-.actions{display:flex;justify-content:flex-end;gap:12px}button{border:1px solid rgba(81,69,205,.32);background:var(--glass-surface-strong);border-radius:12px;padding:10px 18px;min-height:44px;cursor:pointer;font-weight:500;transition:transform 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1)}button:hover{transform:translateY(-2px)}button:active{transform:scale(.98)}button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}button.quiet{background:var(--glass-surface-strong);padding:5px 10px;min-height:32px;color:var(--accent)}
-#notice{font-size:13px;min-height:0;color:var(--ink);overflow-wrap:anywhere}#notice:not(:empty){margin-bottom:10px}.keyboard-help{font-size:11px;margin-top:13px}
-@keyframes appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:780px){body{padding:12px}.glass-panel{height:calc(100dvh - 24px)}header{padding:24px 24px 20px}h1{font-size:26px}.settings-scroll{padding:0 20px 24px 24px}.settings-grid{grid-template-columns:minmax(0,1fr);gap:28px}.appearance{border-left:0;padding-left:0;border-top:1px solid rgba(81,69,205,.14);padding-top:24px}.section-description{min-height:0;margin-bottom:18px}footer{padding:16px 24px}.actions{justify-content:stretch}.actions button{flex:1}.keyboard-help{font-size:11px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}button:hover,button:active{transform:none}}
-@media(prefers-reduced-transparency:reduce){.glass-panel,footer{background:var(--glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}.ambient{display:none}}
-:root[data-transparency=reduce] .glass-panel,:root[data-transparency=reduce] footer{background:var(--glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}:root[data-transparency=reduce] .ambient{display:none}
-@supports not (backdrop-filter:blur(1px)){.glass-panel{background:var(--glass-fallback)}}
-@media(forced-colors:active){.ambient{display:none}.glass-panel,footer{background:Canvas;backdrop-filter:none;box-shadow:none}.glass-panel,input,select,button{border:1px solid CanvasText}:focus-visible{outline-color:Highlight}}
 
-.font-choice{margin-top:24px}
+  /* One translucent slab per control: colour comes from the ambient wash behind it. */
+  --glass-fill: rgba(255,255,255,.07);
+  --glass-fill-hover: rgba(255,255,255,.13);
+  --glass-blur: 10px;
+  --glass-saturate: 1.65;
+  --glass-border: rgba(255,255,255,.70);
+  /* Light from above: a bright catch along the top, a faint violet shade where the slab meets the page. */
+  --glass-sheen: linear-gradient(180deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.05) 20%,rgba(255,255,255,0) 46%,rgba(72,53,116,.055) 100%);
+  --glass-edge:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    inset 1px 0 0 rgba(255,255,255,.45),
+    inset -1px 0 0 rgba(66,46,104,.07),
+    inset 0 -1px 0 rgba(62,40,100,.19),
+    inset 0 -7px 10px -9px rgba(62,40,100,.26),
+    inset 0 0 0 1px rgba(255,255,255,.10);
+  --glass-shadow: 0 7px 16px -7px rgba(58,38,96,.30), 0 1px 2px rgba(58,38,96,.11);
+  --glass-shadow-hover: 0 10px 20px -8px rgba(58,38,96,.34), 0 1px 2px rgba(58,38,96,.12);
+
+  --glass-radius: 24px;
+  /* Capsule corners: half of the 46px control height, like the system search field. */
+  --control-radius: 23px;
+  --button-radius: 15px;
+  --glass-fallback: #F0EAF7;
+  --section-gap: 28px;
+  --field-gap: 20px;
+  box-sizing: border-box;
+  margin: 0;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  color-scheme: light;
+  background-color: var(--bg);
+  /* Static ambient wash: rose upper left, blue-violet right, mint below.
+     It reaches behind the form controls, so the glass has colour to transmit. */
+  background-image:
+    radial-gradient(ellipse 40% 72% at 12% 34%,rgba(236,120,168,.46) 0%,rgba(236,120,168,.24) 40%,rgba(236,120,168,.07) 66%,rgba(236,120,168,0) 84%),
+    radial-gradient(ellipse 30% 30% at 22% 94%,rgba(222,150,196,.26) 0%,rgba(222,150,196,0) 78%),
+    radial-gradient(ellipse 36% 66% at 84% 32%,rgba(98,108,235,.40) 0%,rgba(98,108,235,.21) 42%,rgba(98,108,235,.06) 66%,rgba(98,108,235,0) 84%),
+    radial-gradient(ellipse 30% 34% at 78% 74%,rgba(112,132,240,.24) 0%,rgba(112,132,240,0) 80%),
+    radial-gradient(ellipse 54% 30% at 46% 90%,rgba(70,200,180,.30) 0%,rgba(70,200,180,.10) 46%,rgba(70,200,180,0) 80%),
+    radial-gradient(ellipse 68% 32% at 50% 110%,rgba(72,203,175,.34) 0%,rgba(72,203,175,.12) 44%,rgba(72,203,175,0) 78%),
+    linear-gradient(112deg,#F9E1EC 0%,#F6DFEE 26%,#F1E0F6 48%,#E7E2FA 70%,#DFEAF1 100%);
+  color: var(--ink);
+  font: 400 14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  padding: 24px 32px;
+}
+.settings-page *, .settings-page *::before, .settings-page *::after {box-sizing:border-box}
+.settings-page .ambient {display:none}
+.settings-page .glass-panel {position:relative;max-width:1200px;height:100%;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0}
+.settings-page .settings-header {padding:0 4px 26px}
+.settings-page .eyebrow {font-size:11px;letter-spacing:.12em;font-weight:500;color:var(--muted)}
+.settings-page h1,.settings-page h2 {font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+.settings-page h1 {font-size:32px;line-height:1.3;margin:9px 0 7px;overflow-wrap:anywhere;white-space:pre-wrap}
+.settings-page h2 {font-size:21px;line-height:1.4;margin:0 0 8px}
+.settings-page p {margin:0;color:var(--muted)}
+.settings-page .settings-scroll {min-height:0;overflow:auto;scrollbar-gutter:stable;overscroll-behavior:contain;padding:0 12px 8px 6px;scroll-padding-block:12px}
+.settings-page .settings-grid {display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);column-gap:40px;row-gap:var(--section-gap)}
+.settings-page section,.settings-page .appearance-column {min-width:0}
+.settings-page .appearance-column {display:flex;flex-direction:column;gap:var(--section-gap)}
+.settings-page .section-description {font-size:13px;line-height:1.6;margin-bottom:20px}
+.settings-page .token {font-weight:500;color:var(--ink);white-space:nowrap}
+.settings-page .field {margin-bottom:var(--field-gap)}
+.settings-page .field:last-child {margin-bottom:0}
+.settings-page label {display:block;font-size:14px;font-weight:500;line-height:1.5;margin-bottom:8px}
+.settings-page input,.settings-page select,.settings-page button {font:inherit;color:inherit}
+.settings-page input[type=text],.settings-page select {display:block;width:100%;min-width:0;height:46px;padding:10px 18px;line-height:1.5;transition:border-color 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1)}
+/* The frosted slab itself: translucent fill, one backdrop filter, bright top rim,
+   soft inner shade at the bottom edge and a short contact shadow. */
+.settings-page input[type=text],.settings-page select,.settings-page input[type=color] {
+  background-color:var(--glass-fill);
+  background-image:var(--glass-sheen);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border:1px solid var(--glass-border);
+  border-radius:var(--control-radius);
+  box-shadow:var(--glass-shadow),var(--glass-edge);
+  color:var(--ink);
+}
+.settings-page input[type=text]:hover,.settings-page select:hover,.settings-page input[type=color]:not(:disabled):hover {background-color:var(--glass-fill-hover)}
+/* Native fallback pickers (Windows) paint their own field background; keep the slab above them. */
+.settings-page input[type=text]::-webkit-textfield-decoration-container,.settings-page select::-webkit-select-internal {background:transparent}
+.settings-page input[type=text]:focus,.settings-page select:focus,.settings-page input[type=color]:focus {border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
+.settings-page :focus-visible {outline:2px solid var(--accent);outline-offset:3px}
+.settings-page .color-row {display:flex;align-items:flex-end;gap:14px}
+.settings-page .color-row .field {margin-bottom:0}
+.settings-page .color-row .field:first-child {flex:1}
+.settings-page .color-field {flex:0 0 76px}
+.settings-page input[type=color] {display:block;width:76px;height:46px;padding:5px;cursor:pointer}
+.settings-page input[type=color]:disabled {cursor:default}
+.settings-page input[type=color]::-webkit-color-swatch-wrapper {padding:4px}
+.settings-page input[type=color]::-webkit-color-swatch {border:1px solid rgba(37,34,56,.16);border-radius:11px}
+.settings-page .hint {font-size:12px;line-height:1.6}
+.settings-page #color-help {margin-top:7px}
+.settings-page .font-choice {margin-top:var(--field-gap);margin-bottom:7px}
+.settings-page .preview-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;margin-bottom:8px}
+.settings-page .preview-heading label {margin:0}
+.settings-page #preview {background:linear-gradient(90deg,#fff 50%,#101318 50%);padding:22px 16px;min-height:134px;display:grid;place-items:center;text-align:center;border-radius:16px;margin:14px 0 9px;font-size:22px;font-weight:600;line-height:1.6;overflow-wrap:anywhere;text-shadow:0 2px 3px #000,0 0 12px var(--preview-glow,#9cffdf);color:var(--preview-ink,#f6fdff);-webkit-text-stroke:.25px rgba(0,0,0,.55)}
+.settings-page .panel-appearance h2 {margin-bottom:16px}
+.settings-page .panel-title-field .hint {margin-top:7px}
+.settings-page .field-meta {display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.settings-page #panelTitleCount {flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.settings-page .settings-toolbar {margin-top:22px;padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 16px;align-items:center;background-color:rgba(255,255,255,.10);background-image:var(--glass-sheen);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));border:1px solid var(--glass-border);border-radius:var(--glass-radius);box-shadow:var(--glass-shadow),var(--glass-edge)}
+.settings-page .actions {display:flex;justify-content:flex-end;gap:10px;grid-column:2;grid-row:1}
+.settings-page button {border:1px solid rgba(255,255,255,.62);background-color:rgba(255,255,255,.26);box-shadow:0 3px 8px -4px rgba(58,38,96,.22),inset 0 1px 0 rgba(255,255,255,.78),inset 0 -1px 0 rgba(62,40,100,.10);border-radius:var(--button-radius);padding:10px 18px;min-height:44px;cursor:pointer;font-weight:500;transition:transform 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1),border-color 180ms cubic-bezier(.22,1,.36,1)}
+.settings-page button:hover {transform:translateY(-1px);background-color:rgba(255,255,255,.36)}
+.settings-page button:active {transform:scale(.98)}
+.settings-page button.primary {background-color:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 6px 14px -4px rgba(81,69,205,.42),inset 0 1px 0 rgba(255,255,255,.22)}
+.settings-page button.primary:hover {background-color:#493DBE;box-shadow:0 8px 18px -5px rgba(81,69,205,.46),inset 0 1px 0 rgba(255,255,255,.24)}
+.settings-page button.quiet {padding:5px 10px;min-height:32px;color:var(--accent);background-color:rgba(255,255,255,.26);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));box-shadow:var(--glass-shadow),var(--glass-edge)}
+.settings-page button.quiet:hover {background-color:rgba(255,255,255,.34)}
+.settings-page button:disabled {cursor:default;transform:none}
+.settings-page #notice {grid-column:1;grid-row:1;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+.settings-page .keyboard-help {grid-column:1/-1;font-size:12px;line-height:1.5}
+/* Chromium's customizable native select preserves its own keyboard and focus model. */
+@supports (appearance:base-select) {
+  .settings-page select,.settings-page select::picker(select) {appearance:base-select}
+  .settings-page select {display:flex;align-items:center;justify-content:space-between;gap:10px;padding-inline-end:18px}
+  .settings-page select::picker-icon {color:var(--ink);margin-inline-start:auto;flex:none}
+  /* Open menu: same family as the control, denser so dense text stays crisp. */
+  .settings-page select::picker(select) {background-color:rgba(234,229,250,.88);background-image:linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 30%,rgba(255,255,255,0) 62%,rgba(72,53,116,.04) 100%);-webkit-backdrop-filter:blur(14px) saturate(1.45);backdrop-filter:blur(14px) saturate(1.45);border:1px solid rgba(255,255,255,.74);border-radius:18px;box-shadow:0 18px 42px -12px rgba(58,38,96,.38),0 2px 6px rgba(58,38,96,.12),inset 0 1px 0 rgba(255,255,255,.92),inset 0 -1px 0 rgba(62,40,100,.14);padding:6px;max-height:min(360px,50vh);max-inline-size:calc(100vw - 32px);overflow:auto;color:var(--ink)}
+  .settings-page select option {min-height:38px;padding:8px 10px;border-radius:9px;background:transparent;color:var(--ink);white-space:normal;overflow-wrap:anywhere;transition:background-color 180ms cubic-bezier(.22,1,.36,1)}
+  .settings-page select option:hover {background:rgba(81,69,205,.10)}
+  .settings-page select option:checked {background:rgba(81,69,205,.16)}
+  .settings-page select option:focus-visible {outline:2px solid var(--accent);outline-offset:-2px}
+  .settings-page select option::checkmark {content:'✓';font:600 14px/1 "Segoe UI Symbol",sans-serif;color:var(--accent);margin-inline-end:8px}
+}
+@supports not (appearance:base-select) {
+  .settings-page select option {background:var(--glass-fallback);color:var(--ink)}
+}
+@media(max-width:780px) {
+  .settings-page {padding:20px}
+  .settings-page .settings-header {padding-bottom:24px}
+  .settings-page h1 {font-size:28px}
+  .settings-page .settings-grid {grid-template-columns:minmax(0,1fr);gap:var(--section-gap)}
+  .settings-page .settings-scroll {padding-right:8px}
+  .settings-page .settings-toolbar {padding:14px 16px;margin-top:18px}
+}
+@media(max-width:520px) {
+  .settings-page {padding:18px 14px}
+  .settings-page h1 {font-size:26px}
+  .settings-page .settings-toolbar {grid-template-columns:minmax(0,1fr);gap:10px}
+  .settings-page #notice {grid-column:1;grid-row:auto}
+  .settings-page #notice:empty {display:none}
+  .settings-page .actions {grid-column:1;grid-row:auto;flex-wrap:wrap}
+  .settings-page .actions button {flex:1}
+  .settings-page .keyboard-help {font-size:11px}
+}
+@media(max-height:520px) {
+  .settings-page {padding-top:12px;padding-bottom:12px}
+  .settings-page .settings-header {padding-bottom:14px}
+  .settings-page .settings-toolbar {margin-top:12px;padding-block:10px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .settings-page *,.settings-page *::before,.settings-page *::after {transition:none!important;animation:none!important}
+  .settings-page button:hover,.settings-page button:active {transform:none}
+}
+/* Reduced transparency and missing filter support keep a stable, readable surface. */
+@media(prefers-reduced-transparency:reduce) {
+  .settings-page {background-image:none}
+  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+:root[data-transparency=reduce] .settings-page {background-image:none}
+:root[data-transparency=reduce] .settings-page input[type=text],:root[data-transparency=reduce] .settings-page select,:root[data-transparency=reduce] .settings-page input[type=color],:root[data-transparency=reduce] .settings-page .settings-toolbar,:root[data-transparency=reduce] .settings-page button {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+:root[data-transparency=reduce] .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background-color:var(--glass-fallback);background-image:none}
+  .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none}
+}
+@media(forced-colors:active) {
+  .settings-page {--ink:CanvasText;--muted:CanvasText;--accent:Highlight;background:Canvas;color:CanvasText}
+  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background:Canvas;color:CanvasText;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+  .settings-page select::picker(select) {background:Canvas;color:CanvasText;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+  .settings-page input,.settings-page select,.settings-page button,.settings-page .settings-toolbar {border:1px solid CanvasText}
+  .settings-page :focus-visible {outline-color:Highlight}
+}

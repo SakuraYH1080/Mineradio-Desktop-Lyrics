@@ -323,7 +323,7 @@ const channel = "mineradio-desktop-lyrics-";
 function openSettings(){
   if(settingsWindow&&!settingsWindow.isDestroyed()){settingsWindow.show();settingsWindow.focus();return}
   const area=screen.getPrimaryDisplay().workArea;
-  settingsWindow=new BrowserWindow({width:Math.min(980,area.width-40),height:Math.min(870,area.height-40),minWidth:420,minHeight:560,title:'Mineradio · 歌词设置',autoHideMenuBar:true,backgroundColor:'#E6E1FF',webPreferences:{preload:path.join(root,'src/settings-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  settingsWindow=new BrowserWindow({width:Math.min(980,area.width-40),height:Math.min(870,area.height-40),minWidth:420,minHeight:560,title:'Mineradio · 歌词设置',autoHideMenuBar:true,backgroundColor:'#E8E1F4',webPreferences:{preload:path.join(root,'src/settings-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   settingsWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   settingsWindow.webContents.on('will-navigate',e=>e.preventDefault());
   settingsWindow.loadFile(path.join(root,'public/settings.html'));
@@ -349,7 +349,17 @@ function settingsSender(event){if(event.sender!==settingsWindow?.webContents)thr
 ipcMain.handle('mineradio-settings-read',event=>{settingsSender(event);return {settings,defaults:preferences.defaults,colors:palette.current(),track:timeline.snapshot().track}});
 ipcMain.handle('mineradio-settings-fonts',async event=>{settingsSender(event);const rows=await systemFonts.listFonts();lyricFontFamily=systemFonts.cssFamily(settings.fontFamily);tick();return rows;});
 ipcMain.handle('mineradio-settings-preview',(event,value)=>{settingsSender(event);const p=preferences.normalize(value);return {...(p.colorMode==='fixed'?fromHex(p.fixedColor):palette.current()),fontFamily:systemFonts.cssFamily(p.fontFamily),fontWeight:900}});
-ipcMain.handle('mineradio-settings-save',(event,value)=>{settingsSender(event);settings=preferences.save(settingsPath,value);lyricFontFamily=systemFonts.cssFamily(settings.fontFamily);record({type:'settings-saved',settings});tick();return settings});
+ipcMain.handle('mineradio-settings-save',(event,value)=>{
+  settingsSender(event);
+  const previous=settings;
+  settings=preferences.save(settingsPath,value);
+  record({type:'settings-saved',settings});
+  // The panel title is local presentation; saving it alone does not refresh lyrics.
+  if(previous.fontFamily!==settings.fontFamily || previous.colorMode!==settings.colorMode || previous.fixedColor!==settings.fixedColor || JSON.stringify(previous.captions)!==JSON.stringify(settings.captions)){
+    lyricFontFamily=systemFonts.cssFamily(settings.fontFamily);tick();
+  }
+  return settings;
+});
 ipcMain.on("mineradio-display-observation", (event, payload) => {
   if (!diagnostics || event.sender !== win?.webContents || !payload || !Number.isFinite(payload.atMs)) return;
   record({type: "stability-display", ...payload, mainReceivedAtMs: Date.now()});

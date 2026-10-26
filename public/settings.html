@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>歌词设置</title><link rel="stylesheet" href="settings.css"></head>
-<body>
+<body class="settings-page">
 <div class="ambient" aria-hidden="true"><i class="coral"></i><i class="indigo"></i><i class="mint"></i></div>
 <main class="glass-panel">
-<header><span class="eyebrow">MINERADIO / 桌面歌词</span><h1>让歌词，成为你的风景</h1><p>给音乐留一点颜色，也留一句自己的话。</p></header>
+<header class="settings-header"><span class="eyebrow">MINERADIO / 桌面歌词</span><h1 id="panelTitleHeading">桌面歌词</h1><p>调整状态字幕、歌词配色与字体。</p></header>
 <div class="settings-scroll">
 <div class="settings-grid">
 <section aria-labelledby="captions-title"><h2 id="captions-title">状态字幕</h2><p class="section-description" id="caption-help">留空即可隐藏。支持 <span class="token">{歌名}</span>、<span class="token">{歌手}</span>；暂停时保留当前歌词。</p>
@@ -13,6 +13,7 @@
 <div class="field"><label for="missing">暂无歌词／获取失败</label><input id="missing" type="text" maxlength="240" aria-describedby="caption-help"></div>
 <div class="field"><label for="loading">正在获取歌词</label><input id="loading" type="text" maxlength="240" aria-describedby="caption-help"></div>
 </section>
+<div class="appearance-column">
 <section class="appearance" aria-labelledby="appearance-title"><h2 id="appearance-title">歌词样式</h2><p class="section-description">从封面取色，也可以选择喜欢的配色和本机字体。</p>
 <div class="color-row"><div class="field"><label for="colorMode">配色模式</label><select id="colorMode"><option value="cover">跟随歌曲封面</option><option value="fixed">固定颜色</option></select></div><div class="field color-field"><label for="fixedColor">固定颜色</label><input id="fixedColor" type="color" aria-describedby="color-help"></div></div>
 <p class="hint" id="color-help">固定颜色仅在选择“固定颜色”后启用。</p>
@@ -22,7 +23,14 @@
 <select id="previewState"><option value="waiting">未连接</option><option value="instrumental">纯音乐</option><option value="missing">暂无歌词</option><option value="loading">获取中</option></select>
 <div id="preview" role="img" aria-label="当前字幕在浅色与深色背景上的预览"></div><p class="hint">左浅右深，查看不同背景下的可读性。封面模式使用当前歌曲颜色，输入时自动预览。</p>
 </section>
+<section class="panel-appearance" aria-labelledby="panel-appearance-title">
+<h2 id="panel-appearance-title">面板外观</h2>
+<div class="field panel-title-field"><label for="panelTitle">面板标题</label><input id="panelTitle" type="text" autocomplete="off" aria-describedby="panel-title-help panel-title-limit panelTitleCount">
+<p class="hint" id="panel-title-help">仅修改设置面板顶部标题，不影响桌面歌词。</p>
+<div class="field-meta"><p class="hint" id="panel-title-limit">最多 40 个字符；留空或仅空白时使用“桌面歌词”。</p><span id="panelTitleCount">0 / 40 字符</span></div></div>
+</section>
 </div>
 </div>
-<footer><div id="notice" role="status" aria-live="polite"></div><div class="actions"><button id="reset" type="button">恢复默认</button><button class="primary" id="save" type="button">保存设置</button></div><p class="keyboard-help">Ctrl+Alt+H 显隐歌词 · Ctrl+Alt+L 锁定／解锁</p></footer>
+</div>
+<footer class="settings-toolbar"><div id="notice" role="status" aria-live="polite"></div><div class="actions"><button id="reset" type="button">恢复默认</button><button class="primary" id="save" type="button">保存设置</button></div><p class="keyboard-help">Ctrl+Alt+H 显隐歌词 · Ctrl+Alt+L 锁定／解锁</p></footer>
 </main><script src="settings.js"></script></body></html>

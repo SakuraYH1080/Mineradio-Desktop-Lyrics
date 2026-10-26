@@ -32,3 +32,23 @@ test('EFS rename EXDEV fallback preserves previous settings and saves the new va
  assert.throws(()=>prefs.save(file,{fixedColor:'#778899'},failing),/write denied/);assert.equal(prefs.load(file).fixedColor,'#445566');
  for(const n of fs.readdirSync(dir))fs.unlinkSync(path.join(dir,n));fs.rmdirSync(dir);
 });
+
+test('panel title defaults, persists as plain Unicode text and preserves existing lyric settings',()=>{
+ const legacy={captions:{waiting:'我的等待 · {歌名}',instrumental:''},colorMode:'fixed',fixedColor:'#112233',fontFamily:'Microsoft YaHei'};
+ const normalized=prefs.normalize(legacy);
+ assert.equal(normalized.panelTitle,'桌面歌词');
+ for(const panelTitle of ['', ' \t\n\u3000 '])assert.equal(prefs.normalize({...legacy,panelTitle}).panelTitle,'桌面歌词');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mineradio-panel-title-')),file=path.join(dir,'settings.json');
+ try{
+  const title='我的音乐 · <b>夜色</b> 🎵';
+  const value=prefs.save(file,{...normalized,panelTitle:title});
+  assert.equal(prefs.load(file).panelTitle,title);
+  for(const key of ['captions','colorMode','fixedColor','fontFamily'])assert.deepEqual(value[key],normalized[key]);
+  const long=prefs.normalize({...value,panelTitle:'🎵'.repeat(41)}).panelTitle;
+  assert.equal(Array.from(long).length,40);assert.equal(long,'🎵'.repeat(40));
+  const io={...fs,renameSync(){throw Object.assign(Error('EFS replace'),{code:'EXDEV'})}};
+  prefs.save(file,{...value,panelTitle:'EFS 标题'},io);
+  assert.equal(prefs.load(file).panelTitle,'EFS 标题');assert.equal(prefs.load(file+'.previous').panelTitle,title);
+  assert.equal(prefs.normalize(prefs.defaults).panelTitle,'桌面歌词');
+ }finally{for(const name of fs.readdirSync(dir))fs.unlinkSync(path.join(dir,name));fs.rmdirSync(dir)}
+});
