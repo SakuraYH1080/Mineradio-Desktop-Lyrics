@@ -1,103 +1,68 @@
-# Mineradio 外部桌面歌词
+<img src="public/icons/app.svg" width="80" height="80" alt="Mineradio 桌面歌词">
 
-保留 **Mineradio 的透明桌面动态歌词**，继续用**官方网易云 Windows 客户端**选歌和播放。独立 Electron 程序只负责歌词与视觉效果，不播放第二份音乐。
+# Mineradio 桌面歌词 1.0.0
 
-**0.2.2 · 个人试用版**。基于 [XxHuberrr/Mineradio-paused](https://github.com/XxHuberrr/Mineradio-paused) 改造，非原项目官方发行，也非网易云官方产品。提取基准：`d43de565acabfdc1a9c9820a27e81a98ccbebcef`，采用 GPLv3，保留原作者署名。
+继续用官方网易云 Windows 客户端选歌和播放，独立显示 Mineradio 风格的动态桌面歌词。
 
-## 功能
+**[下载 Windows x64 安装版 Setup.exe](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Setup.exe)** · [可选便携版](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Portable.zip) · [发布说明与校验文件](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.0.0)
 
-- 透明桌面窗口、锁定穿透、解锁拖动；保留漂浮、缩放、柔光及真实 PCM 节奏动效。
-- InfLinkApi 读取当前歌曲 ID、真实时间轴和状态，自动取词；普通 LRC 按行同步，可取得的 YRC 支持逐字高亮。
-- 暂停、恢复、跳转、切歌、重连校正；同句跳转重置高亮；长歌词按本句播放位置滚动。
-- 封面自动配色／固定颜色；未连接、纯音乐、暂无歌词、获取中字幕可定制，支持 `{歌名}`、`{歌手}`，留空隐藏。
-- 开放式设置面板、双栏共享滚动、粉／蓝紫／薄荷静态背景、通透胶囊玻璃控件与原生玻璃下拉菜单。
-- “面板外观 → 面板标题”支持即时预览与保存；默认“桌面歌词”，空白回退，最多40字符，按普通文本显示。
-- 本机字体切换和列表字形预览；保存后重启保留，含 EFS 保存兼容处理。
-- **Ctrl+Alt+H** 立即显隐，**Ctrl+Alt+L** 锁定／解锁；托盘独立退出，音乐继续。重复启动唤回已有窗口。
+安装版与便携版二选一即可。普通用户无需安装 Node、npm 或开发环境；源码 ZIP 用于开发和复现构建。
 
-![最终设置面板](docs/images/settings-0.2.2.png)
+## 安装与首次使用
 
-[查看字体下拉展开效果](docs/images/settings-fonts-0.2.2.png)。图片复用此前已完成的最终前端记录，来自真实 Electron 设置界面验证窗口，使用现有设置页及 preload，播放通信由验证桩替代；不作为实机播放验证。本轮没有重新截图或采样。主图展示最终胶囊控件，展开图展示同轮材质改造的原生弹层。
+1. 下载并运行 Setup.exe，选择安装目录。完成后从桌面或开始菜单打开 **Mineradio 桌面歌词**，直接运行 GUI EXE。
+2. 按首次连接向导核对自己的原版网易云路径、BetterNCM profile 及插件状态。已具备受支持的 BetterNCM / InfLink 时，点 **配置／更新内置 Bridge**，确认目标目录后完成配置，无需另下或手工复制 Bridge ZIP。匹配文件不重复复制，旧桥接文件会先备份。
+3. 如有更新，自己从网易云托盘正常退出再打开，使插件加载；然后正常播放。歌词程序不会强制结束音乐，也不会复制第二套客户端。
 
-## 已知可用环境
+**安装本程序不等于网易云联动依赖已经就绪。** Setup 内置本项目 Bridge；网易云、BetterNCM 与 InfLink 二进制不分发。缺少第三方依赖时，向导显示缺项，并可打开固定版本的官方发布页；按[安装与连接说明](docs/INSTALL_1.0_RC.md)完成外部配置。不会覆盖未知 DLL、自动降级或重装网易云。存在多个安装/profile 时，请选自己实际使用的原版。
 
-| 组件 | 实际使用记录 |
-| --- | --- |
-| Windows | Windows 11 Pro x64，26H2，build 26300.9711；另有 VMware Windows 客体阶段验证 |
-| 网易云官方客户端 | **3.1.42.205594 x64**，接入原安装，无客户端副本 |
-| BetterNCM | **1.3.4 x64**，framework 44b4df2 |
-| InfLink-rs | **3.4.0**，插件名 InfLinkrs |
-| MineradioBridge | **0.4.3** |
-| Electron | **42.4.1**，锁定版本 |
-| 源码构建 | Node.js **22.22.1**、npm；构建 ZIP 另需 Python 3.10+ |
+已有验证组合为 **Windows 11 x64、网易云 3.1.42.205594 x64、BetterNCM 1.3.4 x64、InfLink-rs 3.4.0、MineradioBridge 0.4.3**。自动 Bridge 部署仅在这些已记录的客户端／加载器／InfLink 条件匹配时开放；其他版本尚未验证。文件检测与真实连接状态分开判断，不宣称任意版本装完即用。
 
-只说明上述组合曾实际使用，不承诺所有 Windows／客户端版本兼容。更新组件后需重新确认；不要为了本项目自动降级、升级或重装网易云。
+本版本未配置代码签名，Windows 可能提示未知发布者。请核对 GitHub 下载来源与 SHA256SUMS.txt，不需要关闭系统防护。
 
-## 安装到现有原版网易云
+## 已有功能
 
-完整组件来源、哈希与恢复步骤见 **[安装说明](docs/INSTALL.md)**。
+- 透明独立桌面歌词，锁定穿透与解锁拖动，立即显隐。
+- InfLinkApi 真实歌曲身份与时间轴，暂停、跳转、切歌校正，长句横向滚动及逐字高亮。
+- 前奏歌曲信息、LRC/YRC 选择与解析修复、纯音乐与失败等状态区分。
+- 真实 InfLink PCM 驱动漂浮、发光、低音与节奏效果；不播放第二份音乐、不采集麦克风。
+- 跟随封面配色／固定颜色，自定义状态字幕、面板标题及字幕预览。
+- 通用、中文、拉丁、日语、韩语、西里尔文字字体与混排后备，只使用本机字体。
+- 保留已确认的暖白 DSH 设置前端、专属应用图标及 EFS 保存兼容。
 
-1. 从 [Releases](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases) 下载 `win-x64.zip`，完整解压到自己选择的可写目录。路径可以有空格，不要求 D 盘。包内不含网易云客户端、BetterNCM 加载器或 InfLink 二进制。
-2. 退出网易云和歌词，备份原安装将修改的加载器及已有插件；按安装说明接入匹配的 BetterNCM 1.3.4 x64、InfLink 3.4.0。已有兼容组件优先复用；不要盲目覆盖来源不明的 `msimg32.dll`。
-3. 将本项目 `plugins/MineradioBridge` 放入实际 BetterNCM profile 的 `plugins_dev` 目录；确保 InfLinkrs 已加载。保留其他插件，不复制他人的账号缓存。
-4. 双击 **启动桌面歌词.cmd**，首次输入自己的原版 `cloudmusic.exe` 完整路径和实际 BetterNCM 数据目录。以后复用此配置。也可显式指定：
+## 日常操作
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\release\Start.ps1 `
-  -ClientExe 'E:\Apps\CloudMusic\cloudmusic.exe' -Profile 'C:\betterncm'
-```
+- `Ctrl+Alt+H`：隐藏／显示歌词，再次运行入口可唤回已有窗口。
+- `Ctrl+Alt+L`：解锁拖动／锁定穿透。
+- 托盘 → **歌词设置**：字幕、配色、字体、面板标题、预览、保存及恢复默认。
+- 托盘 → **网易云连接设置**：只重启歌词并重新打开连接向导，音乐继续。
+- 托盘 → **退出**：仅退出歌词，网易云继续播放。
 
-这些仅是示例路径。BetterNCM 1.3.4 默认从系统盘根目录 `betterncm` 读取 profile；输入目录应为原图标启动客户端时实际使用的目录或其联接目标。启动器不注入临时 profile 环境变量，不安装加载器，不改原快捷方式，不添加开机启动。
-
-## 日常使用
-
-- 继续从原**网易云音乐**图标启动，再运行**启动桌面歌词.cmd**；歌词入口也能启动所配置的原客户端。
-- **Ctrl+Alt+H** 隐藏／显示，连接仍工作，音乐不中断；托盘也可恢复。
-- **Ctrl+Alt+L** 解锁后左键拖动，摆好后再次锁定穿透；中键亦可切换定位状态。
-- 歌词托盘右键 → **歌词设置**：字幕、配色、**歌词字体**、**面板标题**。面板标题仅影响顶部设置标题，留空使用“桌面歌词”，不会替代状态字幕。展开字体列表可查看对应字体名称的字形。系统字体按需读取并缓存，不复制文件；卸载字体后自动回退。
-- “预览”不等于保存；“恢复默认”后点击保存才写入配置。暂停保留当前歌词。
-- 托盘“退出”或 **退出桌面歌词.cmd** 只关闭歌词，音乐继续；再次启动即可连接。
-
-## 源码运行与构建
-
-```powershell
-git clone https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics.git
-cd Mineradio-Desktop-Lyrics
-npm ci
-# 先完成插件安装，再配置路径启动
-.\启动桌面歌词.cmd
-# 或直接运行，指定实际桥接目录
-npm run start:bridge -- --bridge-config='C:\betterncm\plugins_dev\MineradioBridge\connection.json'
-# 构建含固定 Electron 的 Windows x64 离线 ZIP
-npm run build:win
-```
-
-`npm start` 默认使用原生 GSMTC；目标客户端的原生时间轴曾无效，真实同步请使用上述 InfLink 路线。`npm run demo` 是合成回放，不代表真实同步或节奏已完成。既有测试源码保留供维护，本次发布不运行测试套件或播放测试。
-
-ZIP 构建使用 `tools/package-release.py`，沿用离线运行时打包方式、缩小到公开白名单；包含对应源码、Electron、许可和构建清单。下载 ZIP 后无需另装 Node；源码构建需要 npm 下载固定 Electron。
-
-## 配置与卸载
-
-- 歌词设置：`%APPDATA%\MineradioExternalLyrics\lyrics-settings.json`，独立于网易云账号，保留 EFS 兼容保存处理。
-- 本项目路径配置：`.runtime/launch.json`，运行数据：`.runtime`，日志：`logs`。可能含本机路径、曲目信息，勿公开上传。
-- 每次启动随机生成回环端口与认证令牌，写入桥接 `connection.json`，退出清理。不要共享它；不需开放公网端口。PCM 只在本机分析，不读麦克风、不上传音频。自动歌词与封面访问网易云在线接口。
-- 卸载：退出歌词与网易云，只移除本项目桥接；不再需要其他插件时才按安装前备份恢复加载器。保留账号、音乐和其他插件；最后删除自己解压的歌词目录。独立歌词设置可选择保留。详见安装说明。
+设置、连接配置与窗口位置保存在 `%APPDATA%\MineradioExternalLyrics`，升级和卸载默认保留，沿用旧单字体迁移及 EFS 兼容。卸载仅删除本程序登记的安装文件和入口，不删除网易云、账号、音乐、第三方插件或私人备份。
 
 ## 常见问题与限制
 
-- **有歌名不同步**：元数据不代表有效进度。核对真实 exe、InfLink／桥接加载位置及实际播放状态；不要将缓存或浏览器媒体作为网易云时间轴。
-- **没有跳动**：需要 `--audio=inflink-pcm` 及新鲜非静音 PCM。PTS 为 0 或已知无效哨兵时使用带质量标记的新鲜度处理，回调接收时间不冒充原生采样时间；无输入时不伪造节拍。
-- **无词或无逐字数据**：在线接口、版权和版本可用性有限，普通 LRC 按行同步。可用既有 `--lrc 文件路径` 暂时绑定首次当前曲目，或参考 `lyrics-bindings.example.json`；本地绑定不代表自动获取成功。
-- **关闭区布局不同**：桥接有已知 BetterNCM header 冲突修补，保留官方布局；更新后规则可能需要重新适配。
-- **快捷键冲突**：注册失败会提示，仍可用托盘操作。
-- **字体缺字／列表字体不明显**：字体未必覆盖中文，缺字使用后备字体；玻璃弹层使用已知 Electron 42.4.1 支持的 base-select；其他 WebView 的原生下拉呈现可能不同。安装或卸载字体后重启歌词刷新列表。
-- 多屏 DPI、资源占用及其他版本兼容仍有改进空间。SDK 对照的毫秒指标不是实际声音与歌词的声学对齐精度。
-- 0.2.2整理已完成并获用户认可的设置面板改造；本轮只做静态文件／许可／版本核对与构建打包，没有运行测试套件、操作网易云、截图采样或开展长时间验证。下载包对应新源码，但不宣称本轮播放测试通过；其他机器与版本仍需自行确认。
+- **未连接**：在托盘重新打开连接设置，确认实际客户端/profile、固定依赖和内置 Bridge，正常重启网易云加载插件；文件齐全不代表运行会话已连通。
+- **更新 Bridge**：仅经明确确认更新本项目五个文件；备份在用户配置目录的 `bridge-backups`，保留会话文件与其他插件。独立 Bridge ZIP 仅供部署/恢复，不是 EXE 用户的额外必需下载。
+- **没有歌词或节奏**：受歌词接口、歌曲权限、客户端与 InfLink 音源能力影响；不绕过权限。部分 PCM 没有可靠原生 PTS，保留质量标记，回调接收时间不代表声学采样时间。
+- **字体缺字**：使用后备字体；代表文字预览不等于完整字库覆盖。纯汉字语言不确定时可用现有语言选项纠正。
+- **安装候选升级**：退出旧歌词再运行新版安装器，音乐可继续。手工部署目录不会被自动删除；不要同时运行两套歌词入口。
 
-## 许可、致谢与更新
+本次正式发布仅完成版本、语法、构建、资源/许可/源码对应及 GitHub 元数据静态核对，未执行自动安装、升级、卸载或播放测试。先前主机体验得到用户认可，不等于此安装包通过全新环境验收。额外背景模板仍为 **等待用户模板**，不影响现有界面。
 
-感谢 **XxHuberrr 与 Mineradio 原作者／贡献者**的歌词渲染和设计，以及 InfLink-rs、BetterNCM、now-playing-service 的接口与研究参考。本项目不加载原播放器首页、登录或 Three.js 场景。
+## 源码与构建
 
-详见 [NOTICE](NOTICE.md)、[第三方说明](THIRD_PARTY_NOTICES.md)、[原始上游署名](docs/UPSTREAM_NOTICE.md) 和 [GPLv3 LICENSE](LICENSE)。Instrument Sans OFL 原样保留；系统字体、网易云客户端及音频不分发。
+开发者需要 Windows x64、Node.js ≥22.12、Python ≥3.10。运行安装版不需要这些工具。
 
-后续通过本仓库 Releases 更新，暂不提供自动更新、安装器或默认开机自启。更新前退出歌词并备份自己的设置，只替换本项目代码及说明要求更新的桥接，不覆盖账号或其他插件。
+```powershell
+npm ci
+python tools/build-desktop.py --output .runtime/release-1.0.0
+npm run build:setup -- --prepackaged .runtime/release-1.0.0 --output artifacts/1.0.0
+python tools/package-candidate.py --directory .runtime/release-1.0.0 --release artifacts/1.0.0
+```
+
+输出目录必须不存在；脚本不清理已有产物。固定 Electron 42.4.1 / electron-builder 26.18.1 / NSIS 3.0.4.1，不升级运行时。资源保持实体 `resources/app`，辅助 PowerShell 可直接读取；用户应用不依赖全局 Node/npm 或开发机路径。源码包记录真实提交和文件哈希，不包含私人开发历史。
+
+## 来源与许可
+
+基于 [XxHuberrr/Mineradio-paused](https://github.com/XxHuberrr/Mineradio-paused) 提交 `d43de565acabfdc1a9c9820a27e81a98ccbebcef` 改造，沿用 GPLv3 与原作者署名。见 [LICENSE](LICENSE)、[NOTICE](NOTICE.md)、[第三方说明](docs/THIRD_PARTY_RC.md) 和[更新记录](CHANGELOG.md)。Electron/Chromium、Instrument Sans OFL、NSIS 许可及素材来源说明随包保留。本机系统字体、网易云本体与账号数据不分发。

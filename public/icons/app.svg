@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Original Mineradio Desktop Lyrics artwork. All coordinates are editable.
+     Solid double rim keeps the tile legible on light and dark Windows surfaces. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Mineradio 桌面歌词</title>
+  <desc id="desc">靛紫圆角底，白色歌词短线与薄荷色声波。</desc>
+  <g id="tile">
+    <rect x="5" y="5" width="246" height="246" rx="59" fill="#30256F"/>
+    <rect x="8" y="8" width="240" height="240" rx="56" fill="#E6E1FF"/>
+    <rect x="11" y="11" width="234" height="234" rx="53" fill="#5145CD"/>
+  </g>
+  <g id="waveform">
+    <rect x="54" y="86" width="16" height="36" rx="8" fill="#FFFFFF"/>
+    <rect x="87" y="63" width="16" height="82" rx="8" fill="#FFFFFF"/>
+    <rect x="120" y="77" width="16" height="54" rx="8" fill="#9CF5DF"/>
+    <rect x="153" y="68" width="16" height="72" rx="8" fill="#FFFFFF"/>
+    <rect x="186" y="89" width="16" height="30" rx="8" fill="#FFFFFF"/>
+  </g>
+  <g id="lyrics">
+    <rect x="54" y="161" width="148" height="17" rx="8.5" fill="#FFFFFF"/>
+    <rect x="54" y="191" width="104" height="17" rx="8.5" fill="#FFFFFF"/>
+  </g>
+</svg>

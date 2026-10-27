@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Mineradio Desktop Lyrics</title>
   <style>
@@ -193,6 +193,8 @@
       <div id="lockHint" class="lock-hint"><span class="lock-icon"></span><span id="lockText">&#20013;&#38190;&#35299;&#38145;</span><button id="closeLyricsBtn" class="lyrics-close" type="button" aria-label="Close desktop lyrics">&#20851;&#38381;&#26700;&#38754;&#27468;&#35789;</button></div>
     </div>
   </div>
+  <script src="../public/lyric-typography.js"></script>
+  <script src="../public/desktop-typography.js"></script>
   <script>
     'use strict';
     var canvas = document.getElementById('fx');
@@ -201,6 +203,7 @@
     var lyricViewport = document.getElementById('lyricViewport');
     var lyricScroller = document.getElementById('lyricScroller');
     var line = document.getElementById('line');
+    var lyricLayout = new window.DesktopLyricLayout(line);
     var lockHint = document.getElementById('lockHint');
     var lockText = document.getElementById('lockText');
     var closeLyricsBtn = document.getElementById('closeLyricsBtn');
@@ -236,6 +239,13 @@
       colors:{primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'},
       displayColors:{primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'}
     };
+    function typographyOptions(value) {
+      return {families:value.fontFamilies || {default:value.fontFamily},language:value.lyricLanguage || 'auto',context:value.fontContextLanguage || 'auto'};
+    }
+    function fontConfigurationKey(value) {
+      return JSON.stringify([value.fontFamily,value.fontFamilies || null,value.lyricLanguage || 'auto',value.fontContextLanguage || 'auto']);
+    }
+    lyricLayout.update(state.text,typographyOptions(state));
     var desktopBeat = {
       key:'',
       map:null,
@@ -578,13 +588,7 @@
       fitLyricText(true);
     }
     function measureLineWidth(fontSize) {
-      ctx.save();
-      ctx.font = state.fontWeight + ' ' + fontSize + 'px ' + state.fontFamily;
-      var text = line.textContent || 'Mineradio';
-      var width = ctx.measureText(text).width;
-      ctx.restore();
-      width += Math.max(0, Array.from(text).length - 1) * fontSize * state.letterSpacing;
-      return Math.max(1, width);
+      return lyricLayout.measure(fontSize,state.fontWeight,state.letterSpacing,state.lineHeight).width;
     }
     function lyricScrollEase(t) {
       t = clamp(t, 0, 1, 0);
@@ -609,6 +613,7 @@
         line.textContent || '',
         baseFontSize,
         state.fontFamily,
+        fontConfigurationKey(state),
         state.fontWeight,
         state.letterSpacing,
         state.lineHeight,
@@ -617,6 +622,7 @@
         window.devicePixelRatio || 1
       ].join('|');
       if (!force && nextLayoutKey === layoutKey) return;
+      if(force)lyricLayout.invalidate();
       layoutKey = nextLayoutKey;
       stage.style.width = safeWidth + 'px';
       stage.style.maxWidth = safeWidth + 'px';
@@ -636,20 +642,22 @@
       var maxScrollableWidth = readableWidth * 1.76;
       for (var i = 0; i < 24; i++) {
         var width = measureLineWidth(size);
-        var height = size * state.lineHeight;
+        var height = lyricLayout.measure(size,state.fontWeight,state.letterSpacing,state.lineHeight).height;
         if ((width <= maxScrollableWidth && height <= maxHeight) || size <= minSize) break;
         size = Math.max(minSize, size - Math.max(1.25, size * .062));
       }
-      var measuredWidth = measureLineWidth(size);
+      renderedFontSize = Math.round(size);
+      var measuredWidth = measureLineWidth(renderedFontSize);
       var maxRenderedWidth = readableWidth * 1.82;
       if (measuredWidth > maxRenderedWidth) {
         fitScaleX = clamp(maxRenderedWidth / measuredWidth, .72, 1, 1);
       }
-      renderedFontSize = Math.round(size);
       setRootVar('--lyric-size', renderedFontSize + 'px');
       setRootVar('--lyric-vertical-feather', Math.round(clamp(renderedFontSize * .92, 38, 72, 46)) + 'px');
       setRootVar('--lyric-letter-spacing', (renderedFontSize * state.letterSpacing).toFixed(2) + 'px');
       setRootVar('--lyric-fit-x', fitScaleX.toFixed(4));
+      lyricLayout.commit(renderedFontSize,state.fontWeight,state.letterSpacing,state.lineHeight);
+      setRootVar('--lyric-progress', (lyricLayout.pixelProgress(displayedProgress) * 100).toFixed(2) + '%');
       // Original inline-block/center layout and scaleX are retained. Measure
       // their zero-translation origin in layout coordinates, not moving stage
       // bounding rects: zero is not necessarily the readable sentence start.
@@ -680,12 +688,12 @@
       }
       var limit = scrollState.limit;
       var wordTimed = state.highlightFollow === true && state.progressMode === 'word';
-      var p = wordTimed ? clamp(progress == null ? state.progress : progress, 0, 1, 0) : state.scrollProgress;
+      var p = wordTimed ? lyricLayout.pixelProgress(clamp(progress == null ? state.progress : progress, 0, 1, 0)) : state.scrollProgress;
       var highlightP = p;
       // Upstream start/end gates and quintic easing, driven by THIS line's
       // seconds/word progress. No independent elapsed-time marquee or retained
       // one-way minimum, so backward seeks and re-show can immediately align.
-      var rawP = wordTimed ? state.progress : state.scrollProgress;
+      var rawP = wordTimed ? lyricLayout.pixelProgress(state.progress) : state.scrollProgress;
       var finalCatch = clamp((rawP - .88) / .12, 0, 1, 0);
       p = Math.max(p, rawP - .10 * finalCatch);
       var spanMs = Math.max(450, state.scrollSpan * 1000);
@@ -765,7 +773,7 @@
     function applyState(next){
       next = next || {};
       var visibilityChanged = next.visibilityResetSerial != null && next.visibilityResetSerial !== state.visibilityResetSerial;
-      var fontChanged = next.fontFamily != null && next.fontFamily !== state.fontFamily;
+      var fontChanged = fontConfigurationKey(Object.assign({},state,next)) !== fontConfigurationKey(state);
       var sentenceChanged = (next.lineKey != null && next.lineKey !== state.lineKey) ||
         (next.trackGeneration != null && next.trackGeneration !== state.trackGeneration);
       var resetProgress = (next.progressResetSerial != null && next.progressResetSerial !== state.progressResetSerial) ||
@@ -846,11 +854,11 @@
         displayedProgress = state.progress;
         scrollState.offset = 0;
         setRootVar('--lyric-scroll-x', '0px');
-        line.textContent = text;
         line.setAttribute('data-text', text);
         layoutKey = '';
         if(!visibilityChanged)replayLineAnimation();
       }
+      if(lyricLayout.update(text,typographyOptions(state)))layoutKey='';
       fitLyricText(visibilityChanged);
       // Also applies while paused or hidden, before the visibility-ready ACK.
       updateLyricScroll(performance.now(), resetProgress ? state.progress : displayedProgress);
@@ -883,25 +891,7 @@
       return clamp(target, 0, 1, target);
     }
     function drawCanvasText(text, x, y, fontSize, spacing, stroke) {
-      var chars = Array.from(text || '');
-      if (!spacing || chars.length < 2) {
-        if (stroke) ctx.strokeText(text, x, y);
-        else ctx.fillText(text, x, y);
-        return;
-      }
-      var width = 0;
-      for (var i = 0; i < chars.length; i++) {
-        width += ctx.measureText(chars[i]).width;
-        if (i < chars.length - 1) width += spacing;
-      }
-      var cursor = x - width / 2;
-      ctx.textAlign = 'left';
-      for (var c = 0; c < chars.length; c++) {
-        if (stroke) ctx.strokeText(chars[c], cursor, y);
-        else ctx.fillText(chars[c], cursor, y);
-        cursor += ctx.measureText(chars[c]).width + (c < chars.length - 1 ? spacing : 0);
-      }
-      ctx.textAlign = 'center';
+      lyricLayout.paint(ctx,x,y,stroke);
     }
     function updateMotion(now, offline) {
       var glowStrength = state.lyricGlow ? state.lyricGlowStrength : 0;
@@ -968,7 +958,7 @@
     }
     function drawHighlightBloom(rect, progress) {
       if (!state.lyricGlow || state.highlightFollow !== true) return;
-      var p = clamp(progress, 0, 1, 0);
+      var p = lyricLayout.pixelProgress(clamp(progress, 0, 1, 0));
       var x = rect.left + rect.width * p;
       var y = rect.top + rect.height * .50 - live.lift * .10;
       var rx = Math.max(42, Math.min(150, renderedFontSize * (1.05 + live.beat * .32)));
@@ -1010,7 +1000,7 @@
       ctx.globalCompositeOperation = 'lighter';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = state.fontWeight + ' ' + renderedFontSize + 'px ' + state.fontFamily;
+      // drawCanvasText paints the same measured font runs as the DOM line.
       ctx.translate(cx, cy);
       ctx.scale(fitScaleX * live.scale, live.scale);
       for (var i = 0; i < layers.length; i++) {
@@ -1075,6 +1065,7 @@
         positionMs: currentDesktopPlaybackTime(nowMs) * 1000,
         text: line.textContent,
         progress: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lyric-progress')) / 100,
+        progressLogical: displayedProgress,
         stageTransform: stage.style.transform,
         glow: getComputedStyle(document.documentElement).getPropertyValue('--lyric-css-beat-glow'),
         motion: {beatPulse: state.beatPulse, bass: state.bass, beatGlow: state.beatGlow},
@@ -1101,7 +1092,7 @@
       var now = nowMs * .001;
       if (state.enabled) {
         var progress = currentDisplayProgress();
-        setRootVar('--lyric-progress', (progress * 100).toFixed(2) + '%');
+        setRootVar('--lyric-progress', (lyricLayout.pixelProgress(progress) * 100).toFixed(2) + '%');
         var offlineMotion = tickDesktopBeatMap(currentDesktopPlaybackTime(nowMs), dt);
         var motion = updateMotion(now, offlineMotion);
         applyStageMotion(now);

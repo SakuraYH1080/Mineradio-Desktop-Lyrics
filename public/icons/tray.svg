@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Small-size companion of app.svg: fewer, wider wave bars and stronger lyric lines. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Mineradio 桌面歌词托盘图标</title>
+  <desc id="desc">靛紫圆角底，三段声波和两条歌词线，适合小尺寸显示。</desc>
+  <g id="tile">
+    <rect x="3" y="3" width="250" height="250" rx="56" fill="#30256F"/>
+    <rect x="7" y="7" width="242" height="242" rx="52" fill="#E6E1FF"/>
+    <rect x="11" y="11" width="234" height="234" rx="48" fill="#5145CD"/>
+  </g>
+  <g id="waveform">
+    <rect x="57" y="75" width="28" height="62" rx="14" fill="#FFFFFF"/>
+    <rect x="114" y="48" width="28" height="112" rx="14" fill="#9CF5DF"/>
+    <rect x="171" y="85" width="28" height="42" rx="14" fill="#FFFFFF"/>
+  </g>
+  <g id="lyrics">
+    <rect x="53" y="177" width="150" height="19" rx="9.5" fill="#FFFFFF"/>
+    <rect x="53" y="211" width="101" height="19" rx="9.5" fill="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,36 +1,59 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>歌词设置</title><link rel="stylesheet" href="settings.css"></head>
-<body class="settings-page">
-<div class="ambient" aria-hidden="true"><i class="coral"></i><i class="indigo"></i><i class="mint"></i></div>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>歌词设置</title><link rel="stylesheet" href="settings.css"></head>
+<body class="settings-page settings-root">
+<div class="settings-decor" aria-hidden="true">
+<svg class="paw-symbols" width="0" height="0"><defs><symbol id="settings-paw" viewBox="0 0 80 80"><ellipse cx="20" cy="25" rx="8" ry="11" transform="rotate(-28 20 25)"/><ellipse cx="38" cy="17" rx="8" ry="11" transform="rotate(-8 38 17)"/><ellipse cx="57" cy="22" rx="8" ry="11" transform="rotate(20 57 22)"/><ellipse cx="68" cy="39" rx="7" ry="10" transform="rotate(38 68 39)"/><path d="M21 50C24 42 30 36 38 36C48 36 51 45 58 51C65 58 59 69 51 67C44 66 40 63 34 67C23 73 13 62 21 50Z"/></symbol></defs></svg>
+<svg class="paw paw-one" viewBox="0 0 80 80"><use href="#settings-paw"/></svg><svg class="paw paw-two" viewBox="0 0 80 80"><use href="#settings-paw"/></svg><svg class="paw paw-three" viewBox="0 0 80 80"><use href="#settings-paw"/></svg>
+</div>
 <main class="glass-panel">
-<header class="settings-header"><span class="eyebrow">MINERADIO / 桌面歌词</span><h1 id="panelTitleHeading">桌面歌词</h1><p>调整状态字幕、歌词配色与字体。</p></header>
+<header class="settings-header">
+<div class="header-copy"><span class="eyebrow">MINERADIO / 桌面歌词</span><h1 id="panelTitleHeading">桌面歌词</h1><span class="title-ornament" aria-hidden="true"><i></i><i></i><i></i></span><span class="connection-pill" data-glass="pill"><span class="connection-mark" aria-hidden="true"></span><span id="connectionStatus" role="status">读取连接状态…</span></span></div>
+<div class="hero-art" aria-hidden="true"><img src="assets/settings/hero-duo.png" alt="" decoding="async"><svg class="hero-wave" viewBox="0 0 1200 110" preserveAspectRatio="none"><path d="M0 62C175 115 340 35 530 68S945 132 1200 42V110H0Z"/></svg></div>
+</header>
+<div class="settings-content" data-glass="panel">
 <div class="settings-scroll">
 <div class="settings-grid">
-<section aria-labelledby="captions-title"><h2 id="captions-title">状态字幕</h2><p class="section-description" id="caption-help">留空即可隐藏。支持 <span class="token">{歌名}</span>、<span class="token">{歌手}</span>；暂停时保留当前歌词。</p>
-<div class="field"><label for="waiting">未连接／尚未选歌</label><input id="waiting" type="text" maxlength="240" aria-describedby="caption-help"></div>
-<div class="field"><label for="instrumental">纯音乐</label><input id="instrumental" type="text" maxlength="240" aria-describedby="caption-help"></div>
-<div class="field"><label for="missing">暂无歌词／获取失败</label><input id="missing" type="text" maxlength="240" aria-describedby="caption-help"></div>
-<div class="field"><label for="loading">正在获取歌词</label><input id="loading" type="text" maxlength="240" aria-describedby="caption-help"></div>
+<div class="captions-column">
+<section aria-labelledby="captions-title"><div class="caption-intro"><div class="caption-intro-copy"><h2 id="captions-title">状态字幕</h2><p class="section-description" id="caption-help">留空即可隐藏。支持 <span class="token">{歌名}</span>、<span class="token">{歌手}</span>；暂停时保留当前歌词。</p></div><figure class="character-corner" aria-hidden="true"><img src="assets/settings/chibi.png" alt="" loading="lazy" decoding="async"></figure></div>
+<div class="field"><label for="waiting">未连接／尚未选歌</label><span class="glass-field" data-glass="control"><input id="waiting" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
+<div class="field"><label for="instrumental">纯音乐</label><span class="glass-field" data-glass="control"><input id="instrumental" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
+<div class="field"><label for="missing">暂无歌词／获取失败</label><span class="glass-field" data-glass="control"><input id="missing" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
+<div class="field"><label for="loading">正在获取歌词</label><span class="glass-field" data-glass="control"><input id="loading" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
 </section>
-<div class="appearance-column">
-<section class="appearance" aria-labelledby="appearance-title"><h2 id="appearance-title">歌词样式</h2><p class="section-description">从封面取色，也可以选择喜欢的配色和本机字体。</p>
-<div class="color-row"><div class="field"><label for="colorMode">配色模式</label><select id="colorMode"><option value="cover">跟随歌曲封面</option><option value="fixed">固定颜色</option></select></div><div class="field color-field"><label for="fixedColor">固定颜色</label><input id="fixedColor" type="color" aria-describedby="color-help"></div></div>
-<p class="hint" id="color-help">固定颜色仅在选择“固定颜色”后启用。</p>
-<div class="field font-choice"><label for="fontFamily">歌词字体</label><select id="fontFamily" aria-describedby="font-notice"><option value="">默认字体</option></select></div>
-<p class="hint" id="font-notice" role="status">本机字体按需读取；不可用时自动回退，设置面板字体不变。</p>
-<div class="preview-heading"><label for="previewState">预览字幕</label><button id="previewButton" type="button" class="quiet">预览</button></div>
-<select id="previewState"><option value="waiting">未连接</option><option value="instrumental">纯音乐</option><option value="missing">暂无歌词</option><option value="loading">获取中</option></select>
+<section class="preview-section" aria-labelledby="preview-title">
+<div class="preview-heading"><label for="previewState" id="preview-title">预览字幕</label><button data-glass="button" id="previewButton" type="button" class="quiet">预览</button></div>
+<span class="glass-field" data-glass="control"><select id="previewState"><option value="waiting">未连接</option><option value="instrumental">纯音乐</option><option value="missing">暂无歌词</option><option value="loading">获取中</option></select></span>
 <div id="preview" role="img" aria-label="当前字幕在浅色与深色背景上的预览"></div><p class="hint">左浅右深，查看不同背景下的可读性。封面模式使用当前歌曲颜色，输入时自动预览。</p>
 </section>
 <section class="panel-appearance" aria-labelledby="panel-appearance-title">
 <h2 id="panel-appearance-title">面板外观</h2>
-<div class="field panel-title-field"><label for="panelTitle">面板标题</label><input id="panelTitle" type="text" autocomplete="off" aria-describedby="panel-title-help panel-title-limit panelTitleCount">
+<div class="field panel-title-field"><label for="panelTitle">面板标题</label><span class="glass-field" data-glass="control"><input id="panelTitle" type="text" autocomplete="off" aria-describedby="panel-title-help panel-title-limit panelTitleCount"></span>
 <p class="hint" id="panel-title-help">仅修改设置面板顶部标题，不影响桌面歌词。</p>
 <div class="field-meta"><p class="hint" id="panel-title-limit">最多 40 个字符；留空或仅空白时使用“桌面歌词”。</p><span id="panelTitleCount">0 / 40 字符</span></div></div>
 </section>
 </div>
+<div class="appearance-column">
+<section class="appearance" aria-labelledby="appearance-title"><h2 id="appearance-title">歌词样式</h2>
+<div class="color-row"><div class="field"><label for="colorMode">配色模式</label><span class="glass-field" data-glass="control"><select id="colorMode"><option value="cover">跟随歌曲封面</option><option value="fixed">固定颜色</option></select></span></div><div class="field color-field"><label for="fixedColor">固定颜色</label><span class="glass-field" data-glass="control"><input id="fixedColor" type="color" aria-describedby="color-help"></span></div></div>
+<p class="hint" id="color-help">固定颜色仅在选择“固定颜色”后启用。</p>
+<div class="font-configuration" role="group" aria-labelledby="font-group-title">
+<h3 id="font-group-title">歌词字体</h3>
+<div class="field font-choice"><label for="fontFamily">通用默认字体</label><span class="glass-field" data-glass="control"><select id="fontFamily" aria-describedby="font-notice"><option value="">默认字体</option></select></span><p class="font-sample" id="fontSample-default">中文 · English · 日本語かな · 한글 · Русский</p></div>
+<div class="font-grid">
+<div class="field"><label for="fontFamily-zh">中文字体</label><span class="glass-field" data-glass="control"><select id="fontFamily-zh" aria-describedby="font-notice"><option value="">沿用通用默认</option></select></span><p class="font-sample" id="fontSample-zh">中文歌词，随音乐流动</p></div>
+<div class="field"><label for="fontFamily-latin">英文／拉丁字母字体</label><span class="glass-field" data-glass="control"><select id="fontFamily-latin" aria-describedby="font-notice"><option value="">沿用通用默认</option></select></span><p class="font-sample" id="fontSample-latin">The music stays · Aa Éé</p></div>
+<div class="field"><label for="fontFamily-ja">日语字体</label><span class="glass-field" data-glass="control"><select id="fontFamily-ja" aria-describedby="font-notice"><option value="">沿用通用默认</option></select></span><p class="font-sample" id="fontSample-ja">日本語の歌詞、あいうえお</p></div>
+<div class="field"><label for="fontFamily-ko">韩语字体</label><span class="glass-field" data-glass="control"><select id="fontFamily-ko" aria-describedby="font-notice"><option value="">沿用通用默认</option></select></span><p class="font-sample" id="fontSample-ko">음악과 함께하는 노래</p></div>
+<div class="field"><label for="fontFamily-cyrillic">俄语／西里尔字母字体</label><span class="glass-field" data-glass="control"><select id="fontFamily-cyrillic" aria-describedby="font-notice"><option value="">沿用通用默认</option></select></span><p class="font-sample" id="fontSample-cyrillic">Музыка и слова · Ая Жё</p></div>
+</div>
+<div class="field font-language"><label for="lyricLanguage">汉字语言判断</label><span class="glass-field" data-glass="control"><select id="lyricLanguage" aria-describedby="font-language-help"><option value="auto">自动判断</option><option value="zh">指定中文</option><option value="ja">指定日语</option><option value="ko">指定韩语</option></select></span><p class="hint" id="font-language-help">用于纠正含糊汉字的归属；明确的假名、韩文、拉丁和西里尔文字仍按各自字体显示。纯汉字无法确定时沿用通用默认。</p></div>
+<p class="hint" id="font-notice" role="status">本机字体按需读取；代表字符覆盖不等于支持全部歌词，缺字仍使用后备字体。仅影响歌词与预览，设置面板字体不变。</p>
+</div>
+</section>
 </div>
 </div>
-<footer class="settings-toolbar"><div id="notice" role="status" aria-live="polite"></div><div class="actions"><button id="reset" type="button">恢复默认</button><button class="primary" id="save" type="button">保存设置</button></div><p class="keyboard-help">Ctrl+Alt+H 显隐歌词 · Ctrl+Alt+L 锁定／解锁</p></footer>
-</main><script src="settings.js"></script></body></html>
+</div>
+</div>
+<footer class="settings-toolbar" data-glass="toolbar"><div id="notice" role="status" aria-live="polite"></div><div class="actions"><button data-glass="button" id="reset" type="button">恢复默认</button><button data-glass="button" class="primary" id="save" type="button">保存设置</button></div><p class="keyboard-help">Ctrl+Alt+H 显隐歌词 · Ctrl+Alt+L 锁定／解锁</p></footer>
+</main><script src="lyric-typography.js"></script><script src="settings.js"></script><script src="settings-glass.js"></script></body></html>

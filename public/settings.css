@@ -1,184 +1,221 @@
-/* Loaded only by settings.html. Keep every visual rule within the panel. */
+/* Settings-only theme. No rule or font escapes into the desktop lyric window. */
+@font-face {font-family:"Instrument Sans";src:url("fonts/InstrumentSans-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face {font-family:"Instrument Sans";src:url("fonts/InstrumentSans-Medium.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face {font-family:"Instrument Sans";src:url("fonts/InstrumentSans-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
 .settings-page {
-  --bg: #E8E1F4;
-  --ink: #252238;
-  --muted: #464052;
-  --accent: #5145CD;
-  --on-accent: #FFFFFF;
-
-  /* One translucent slab per control: colour comes from the ambient wash behind it. */
-  --glass-fill: rgba(255,255,255,.07);
-  --glass-fill-hover: rgba(255,255,255,.13);
-  --glass-blur: 10px;
-  --glass-saturate: 1.65;
-  --glass-border: rgba(255,255,255,.70);
-  /* Light from above: a bright catch along the top, a faint violet shade where the slab meets the page. */
-  --glass-sheen: linear-gradient(180deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.05) 20%,rgba(255,255,255,0) 46%,rgba(72,53,116,.055) 100%);
-  --glass-edge:
-    inset 0 1px 0 rgba(255,255,255,.92),
-    inset 1px 0 0 rgba(255,255,255,.45),
-    inset -1px 0 0 rgba(66,46,104,.07),
-    inset 0 -1px 0 rgba(62,40,100,.19),
-    inset 0 -7px 10px -9px rgba(62,40,100,.26),
-    inset 0 0 0 1px rgba(255,255,255,.10);
-  --glass-shadow: 0 7px 16px -7px rgba(58,38,96,.30), 0 1px 2px rgba(58,38,96,.11);
-  --glass-shadow-hover: 0 10px 20px -8px rgba(58,38,96,.34), 0 1px 2px rgba(58,38,96,.12);
-
-  --glass-radius: 24px;
-  /* Capsule corners: half of the 46px control height, like the system search field. */
-  --control-radius: 23px;
-  --button-radius: 15px;
-  --glass-fallback: #F0EAF7;
-  --section-gap: 28px;
-  --field-gap: 20px;
-  box-sizing: border-box;
-  margin: 0;
-  height: 100dvh;
-  overflow: hidden;
-  isolation: isolate;
-  color-scheme: light;
-  background-color: var(--bg);
-  /* Static ambient wash: rose upper left, blue-violet right, mint below.
-     It reaches behind the form controls, so the glass has colour to transmit. */
-  background-image:
-    radial-gradient(ellipse 40% 72% at 12% 34%,rgba(236,120,168,.46) 0%,rgba(236,120,168,.24) 40%,rgba(236,120,168,.07) 66%,rgba(236,120,168,0) 84%),
-    radial-gradient(ellipse 30% 30% at 22% 94%,rgba(222,150,196,.26) 0%,rgba(222,150,196,0) 78%),
-    radial-gradient(ellipse 36% 66% at 84% 32%,rgba(98,108,235,.40) 0%,rgba(98,108,235,.21) 42%,rgba(98,108,235,.06) 66%,rgba(98,108,235,0) 84%),
-    radial-gradient(ellipse 30% 34% at 78% 74%,rgba(112,132,240,.24) 0%,rgba(112,132,240,0) 80%),
-    radial-gradient(ellipse 54% 30% at 46% 90%,rgba(70,200,180,.30) 0%,rgba(70,200,180,.10) 46%,rgba(70,200,180,0) 80%),
-    radial-gradient(ellipse 68% 32% at 50% 110%,rgba(72,203,175,.34) 0%,rgba(72,203,175,.12) 44%,rgba(72,203,175,0) 78%),
-    linear-gradient(112deg,#F9E1EC 0%,#F6DFEE 26%,#F1E0F6 48%,#E7E2FA 70%,#DFEAF1 100%);
-  color: var(--ink);
-  font: 400 14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
-  padding: 24px 32px;
+  --settings-bg:#F8F5F2;
+  --settings-ink:#4B454B;
+  --settings-muted:#6B6268;
+  --settings-line:rgba(104,91,99,.16);
+  --settings-accent:#216D9B;
+  --settings-on-accent:#FFFFFF;
+  --settings-sky:#54B4E8;
+  --settings-pink:#EFB4C9;
+  --settings-mint:#AFE0D1;
+  --settings-coral:#F0B9A5;
+  --settings-glass-tint:rgba(255,255,255,.32);
+  --settings-reading-surface:rgba(255,252,250,.84);
+  --settings-glass-edge:rgba(255,255,255,.78);
+  --settings-glass-fallback:#F6F2EF;
+  --settings-panel-radius:24px;
+  --settings-control-radius:14px;
+  --ink:var(--settings-ink);
+  --muted:var(--settings-muted);
+  --accent:var(--settings-accent);
+  --on-accent:var(--settings-on-accent);
+  --section-gap:26px;
+  --field-gap:20px;
+  --hero-height:clamp(164px,23vh,208px);
+  box-sizing:border-box;margin:0;height:100dvh;overflow:hidden;isolation:isolate;color-scheme:light;
+  background:var(--settings-bg);color:var(--ink);
+  font:400 14px/1.6 "Instrument Sans","Segoe UI","PingFang SC","Noto Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  padding:14px 26px 20px;
 }
-.settings-page *, .settings-page *::before, .settings-page *::after {box-sizing:border-box}
-.settings-page .ambient {display:none}
+.settings-page *,.settings-page *::before,.settings-page *::after {box-sizing:border-box}
+.settings-page [hidden] {display:none!important}
 .settings-page .glass-panel {position:relative;max-width:1200px;height:100%;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0}
-.settings-page .settings-header {padding:0 4px 26px}
-.settings-page .eyebrow {font-size:11px;letter-spacing:.12em;font-weight:500;color:var(--muted)}
+.settings-page .settings-decor {position:fixed;inset:0;pointer-events:none;user-select:none;z-index:-1;overflow:hidden}
+.settings-page .paw-symbols {position:absolute}
+.settings-page .paw {position:absolute;fill:#987887;opacity:.065;width:88px;height:88px;pointer-events:none}
+.settings-page .paw-one {top:32%;left:-24px;transform:rotate(22deg)}
+.settings-page .paw-two {width:60px;height:60px;right:-13px;top:67%;transform:rotate(-24deg);fill:#759BA9}
+.settings-page .paw-three {width:104px;height:104px;left:29%;bottom:-28px;transform:rotate(14deg);fill:#829D91}
+.settings-page .settings-header {position:relative;min-height:var(--hero-height);padding:12px 4px 24px;overflow:hidden}
+.settings-page .header-copy {position:relative;z-index:2;width:47%;max-width:440px;padding-top:8px}
+.settings-page .eyebrow {display:block;font-size:10px;letter-spacing:.10em;font-weight:500;color:var(--muted)}
 .settings-page h1,.settings-page h2 {font-weight:600;letter-spacing:-.02em;color:var(--ink)}
-.settings-page h1 {font-size:32px;line-height:1.3;margin:9px 0 7px;overflow-wrap:anywhere;white-space:pre-wrap}
+.settings-page h1 {font-size:28px;line-height:1.3;margin:7px 0 6px;overflow-wrap:anywhere;white-space:pre-wrap}
 .settings-page h2 {font-size:21px;line-height:1.4;margin:0 0 8px}
 .settings-page p {margin:0;color:var(--muted)}
-.settings-page .settings-scroll {min-height:0;overflow:auto;scrollbar-gutter:stable;overscroll-behavior:contain;padding:0 12px 8px 6px;scroll-padding-block:12px}
-.settings-page .settings-grid {display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);column-gap:40px;row-gap:var(--section-gap)}
-.settings-page section,.settings-page .appearance-column {min-width:0}
-.settings-page .appearance-column {display:flex;flex-direction:column;gap:var(--section-gap)}
+.settings-page .title-ornament {display:flex;align-items:center;gap:5px;height:9px;margin:10px 0 2px;pointer-events:none}
+.settings-page .title-ornament i {display:block;width:28px;height:3px;border-radius:999px;background:var(--settings-sky);opacity:.6}
+.settings-page .title-ornament i:nth-child(2) {width:14px;background:var(--settings-pink)}
+.settings-page .title-ornament i:nth-child(3) {width:6px;background:var(--settings-mint)}
+.settings-page .hero-art {position:absolute;z-index:0;inset:0 -10px 0 35%;pointer-events:none;user-select:none}
+.settings-page .hero-art>img {display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:right bottom;pointer-events:none}
+.settings-page .hero-wave {position:absolute;inset:auto -1px -1px;height:39px;width:calc(100% + 2px);fill:var(--settings-bg);pointer-events:none}
+.settings-page .connection-pill {position:relative;display:inline-flex;align-items:center;gap:6px;min-height:28px;max-width:100%;padding:3px 11px;margin-top:12px;border-radius:999px;border:1px solid rgba(67,135,172,.24);background:rgba(223,242,249,.72);font-size:12px;line-height:1.5;font-weight:500;color:#245F81;overflow:visible}
+.settings-page .connection-pill>.glass-material {background:rgba(220,242,250,.62)}
+.settings-page .connection-mark {width:6px;height:6px;flex:none;border:1px solid currentColor;border-radius:50%;background:currentColor}
+.settings-page #connectionStatus {overflow-wrap:anywhere}
+.settings-page .settings-content {position:relative;min-height:0;border-radius:var(--settings-panel-radius);border:1px solid rgba(128,110,117,.15);background:rgba(255,252,250,.48);box-shadow:0 7px 23px -15px rgba(92,69,78,.19),inset 0 1px 0 rgba(255,255,255,.86)}
+/* The large pane refracts only its rim; reading surfaces and control backdrops
+   do not receive a second full-area filter. */
+.settings-page .settings-content>.glass-material {padding:12px;background:rgba(255,255,255,.18);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.settings-page .settings-scroll {position:relative;z-index:1;height:100%;min-height:0;overflow:auto;scrollbar-gutter:stable;overscroll-behavior:contain;padding:24px 24px 28px;scroll-padding-block:18px;border-radius:inherit}
+.settings-page .settings-grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);column-gap:36px;row-gap:var(--section-gap)}
+.settings-page section,.settings-page .captions-column,.settings-page .appearance-column {min-width:0}
+.settings-page .captions-column,.settings-page .appearance-column {display:flex;flex-direction:column;gap:var(--section-gap)}
 .settings-page .section-description {font-size:13px;line-height:1.6;margin-bottom:20px}
 .settings-page .token {font-weight:500;color:var(--ink);white-space:nowrap}
 .settings-page .field {margin-bottom:var(--field-gap)}
 .settings-page .field:last-child {margin-bottom:0}
 .settings-page label {display:block;font-size:14px;font-weight:500;line-height:1.5;margin-bottom:8px}
 .settings-page input,.settings-page select,.settings-page button {font:inherit;color:inherit}
-.settings-page input[type=text],.settings-page select {display:block;width:100%;min-width:0;height:46px;padding:10px 18px;line-height:1.5;transition:border-color 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1)}
-/* The frosted slab itself: translucent fill, one backdrop filter, bright top rim,
-   soft inner shade at the bottom edge and a short contact shadow. */
-.settings-page input[type=text],.settings-page select,.settings-page input[type=color] {
-  background-color:var(--glass-fill);
-  background-image:var(--glass-sheen);
-  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border:1px solid var(--glass-border);
-  border-radius:var(--control-radius);
-  box-shadow:var(--glass-shadow),var(--glass-edge);
-  color:var(--ink);
-}
-.settings-page input[type=text]:hover,.settings-page select:hover,.settings-page input[type=color]:not(:disabled):hover {background-color:var(--glass-fill-hover)}
-/* Native fallback pickers (Windows) paint their own field background; keep the slab above them. */
+.settings-page .glass-field {display:block;position:relative;width:100%;min-width:0;height:46px;border:1px solid rgba(120,105,114,.24);border-radius:var(--settings-control-radius);background:rgba(255,255,255,.38);box-shadow:0 4px 10px -7px rgba(93,69,82,.29),inset 0 1px 0 rgba(255,255,255,.93),inset 0 -1px 0 rgba(99,78,88,.12);transition:background-color 180ms cubic-bezier(.22,1,.36,1),border-color 180ms cubic-bezier(.22,1,.36,1)}
+.settings-page .glass-field:hover {background-color:rgba(255,255,255,.48);border-color:rgba(106,91,102,.33)}
+.settings-page .glass-field.has-settings-glass {background-color:transparent}
+.settings-page .glass-field:focus-within {outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
+.settings-page input[type=text],.settings-page select {display:block;position:relative;z-index:1;width:100%;min-width:0;height:44px;padding:10px 14px;line-height:1.5;border:0;border-radius:inherit;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;color:var(--ink)}
+.settings-page .glass-field input:focus,.settings-page .glass-field select:focus {outline:none}
 .settings-page input[type=text]::-webkit-textfield-decoration-container,.settings-page select::-webkit-select-internal {background:transparent}
-.settings-page input[type=text]:focus,.settings-page select:focus,.settings-page input[type=color]:focus {border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
 .settings-page :focus-visible {outline:2px solid var(--accent);outline-offset:3px}
 .settings-page .color-row {display:flex;align-items:flex-end;gap:14px}
 .settings-page .color-row .field {margin-bottom:0}
-.settings-page .color-row .field:first-child {flex:1}
+.settings-page .color-row .field:first-child {flex:1;min-width:0}
 .settings-page .color-field {flex:0 0 76px}
-.settings-page input[type=color] {display:block;width:76px;height:46px;padding:5px;cursor:pointer}
+.settings-page input[type=color] {display:block;position:relative;z-index:1;width:74px;height:44px;padding:5px;border:0;border-radius:inherit;cursor:pointer;background:transparent}
 .settings-page input[type=color]:disabled {cursor:default}
 .settings-page input[type=color]::-webkit-color-swatch-wrapper {padding:4px}
-.settings-page input[type=color]::-webkit-color-swatch {border:1px solid rgba(37,34,56,.16);border-radius:11px}
+.settings-page input[type=color]::-webkit-color-swatch {border:1px solid rgba(65,57,63,.20);border-radius:8px}
 .settings-page .hint {font-size:12px;line-height:1.6}
 .settings-page #color-help {margin-top:7px}
 .settings-page .font-choice {margin-top:var(--field-gap);margin-bottom:7px}
+.settings-page .font-configuration {margin-top:var(--field-gap);padding-top:20px;border-top:1px solid var(--settings-line)}
+.settings-page .font-configuration h3 {font-size:14px;font-weight:500;line-height:1.5;margin:0 0 12px;color:var(--ink)}
+.settings-page .font-configuration .font-choice {margin-top:0;margin-bottom:16px}
+.settings-page .font-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 14px}
+.settings-page .font-grid .field {margin:0;min-width:0}
+.settings-page .font-grid label {font-size:13px}
+.settings-page .font-grid select {padding-inline:12px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.settings-page .font-sample {font-size:14px;line-height:1.65;margin-top:7px;min-height:24px;color:var(--ink);overflow-wrap:anywhere}
+.settings-page .font-language {margin-top:18px;margin-bottom:10px}
+.settings-page .font-language .hint {margin-top:7px}
 .settings-page .preview-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;margin-bottom:8px}
+.settings-page .preview-section .preview-heading {margin-top:0}
 .settings-page .preview-heading label {margin:0}
 .settings-page #preview {background:linear-gradient(90deg,#fff 50%,#101318 50%);padding:22px 16px;min-height:134px;display:grid;place-items:center;text-align:center;border-radius:16px;margin:14px 0 9px;font-size:22px;font-weight:600;line-height:1.6;overflow-wrap:anywhere;text-shadow:0 2px 3px #000,0 0 12px var(--preview-glow,#9cffdf);color:var(--preview-ink,#f6fdff);-webkit-text-stroke:.25px rgba(0,0,0,.55)}
+.settings-page .panel-appearance {padding-top:21px;border-top:1px solid var(--settings-line)}
 .settings-page .panel-appearance h2 {margin-bottom:16px}
 .settings-page .panel-title-field .hint {margin-top:7px}
-.settings-page .field-meta {display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.settings-page .field-meta {display:flex;align-items:baseline;justify-content:space-between;gap:9px 12px;flex-wrap:wrap}
 .settings-page #panelTitleCount {flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.settings-page .settings-toolbar {margin-top:22px;padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 16px;align-items:center;background-color:rgba(255,255,255,.10);background-image:var(--glass-sheen);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));border:1px solid var(--glass-border);border-radius:var(--glass-radius);box-shadow:var(--glass-shadow),var(--glass-edge)}
+.settings-page .caption-intro {display:grid;grid-template-columns:minmax(0,1fr) 118px;gap:12px;align-items:center;min-height:134px;margin-bottom:18px}
+.settings-page .caption-intro-copy {min-width:0}
+.settings-page .caption-intro .section-description {margin-bottom:0}
+.settings-page .character-corner {display:flex;justify-content:center;align-items:center;width:118px;height:134px;margin:0;pointer-events:none;user-select:none}
+.settings-page .character-corner img {display:block;width:118px;height:134px;max-width:100%;object-fit:contain;pointer-events:none}
+.settings-page .settings-toolbar {position:relative;margin-top:16px;padding:12px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 16px;align-items:center;border:1px solid rgba(120,105,114,.18);border-radius:20px;background:rgba(255,255,255,.28);box-shadow:0 7px 20px -12px rgba(92,69,78,.23),inset 0 1px 0 var(--settings-glass-edge)}
+.settings-page .settings-toolbar.has-settings-glass {background:transparent}
+.settings-page .settings-toolbar>.glass-material {padding:7px;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 .settings-page .actions {display:flex;justify-content:flex-end;gap:10px;grid-column:2;grid-row:1}
-.settings-page button {border:1px solid rgba(255,255,255,.62);background-color:rgba(255,255,255,.26);box-shadow:0 3px 8px -4px rgba(58,38,96,.22),inset 0 1px 0 rgba(255,255,255,.78),inset 0 -1px 0 rgba(62,40,100,.10);border-radius:var(--button-radius);padding:10px 18px;min-height:44px;cursor:pointer;font-weight:500;transition:transform 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1),border-color 180ms cubic-bezier(.22,1,.36,1)}
-.settings-page button:hover {transform:translateY(-1px);background-color:rgba(255,255,255,.36)}
+.settings-page button {position:relative;border:1px solid rgba(120,105,114,.25);background:rgba(255,255,255,.32);box-shadow:0 3px 9px -6px rgba(92,69,78,.24),inset 0 1px 0 rgba(255,255,255,.90),inset 0 -1px 0 rgba(99,78,88,.10);border-radius:14px;padding:10px 18px;min-height:44px;cursor:pointer;font-weight:500;transition:transform 180ms cubic-bezier(.22,1,.36,1),background-color 180ms cubic-bezier(.22,1,.36,1),border-color 180ms cubic-bezier(.22,1,.36,1)}
+.settings-page button:hover {transform:translateY(-1px);background-color:rgba(255,255,255,.48)}
 .settings-page button:active {transform:scale(.98)}
-.settings-page button.primary {background-color:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 6px 14px -4px rgba(81,69,205,.42),inset 0 1px 0 rgba(255,255,255,.22)}
-.settings-page button.primary:hover {background-color:#493DBE;box-shadow:0 8px 18px -5px rgba(81,69,205,.46),inset 0 1px 0 rgba(255,255,255,.24)}
-.settings-page button.quiet {padding:5px 10px;min-height:32px;color:var(--accent);background-color:rgba(255,255,255,.26);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));box-shadow:var(--glass-shadow),var(--glass-edge)}
-.settings-page button.quiet:hover {background-color:rgba(255,255,255,.34)}
+.settings-page button.primary {background:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 5px 12px -6px rgba(25,86,122,.42),inset 0 1px 0 rgba(255,255,255,.20)}
+.settings-page button.primary:hover {background:#1B608A}
+.settings-page button.primary>.glass-material {display:none}
+.settings-page button.quiet {padding:5px 11px;min-height:32px;color:var(--accent)}
 .settings-page button:disabled {cursor:default;transform:none}
 .settings-page #notice {grid-column:1;grid-row:1;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
 .settings-page .keyboard-help {grid-column:1/-1;font-size:12px;line-height:1.5}
-/* Chromium's customizable native select preserves its own keyboard and focus model. */
+/* Refraction belongs to a separate, inert material layer. No text is filtered. */
+.settings-page .glass-material {position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,.04) 40%,rgba(122,104,115,.045)),var(--settings-glass-tint);border:1px solid rgba(255,255,255,.60);box-shadow:inset 0 1px 0 rgba(255,255,255,.90),inset 0 -1px 0 rgba(97,78,91,.12);-webkit-backdrop-filter:var(--settings-glass-filter,blur(6px));backdrop-filter:var(--settings-glass-filter,blur(6px))}
+.settings-page .has-settings-glass>:not(.glass-material) {position:relative;z-index:1}
+.settings-page .settings-content>.settings-scroll {position:relative;z-index:1}
+/* Keep the native accessible picker in the top layer; no wrapper clips it. */
 @supports (appearance:base-select) {
   .settings-page select,.settings-page select::picker(select) {appearance:base-select}
-  .settings-page select {display:flex;align-items:center;justify-content:space-between;gap:10px;padding-inline-end:18px}
+  .settings-page select {display:flex;align-items:center;justify-content:space-between;gap:10px;padding-inline-end:14px}
   .settings-page select::picker-icon {color:var(--ink);margin-inline-start:auto;flex:none}
-  /* Open menu: same family as the control, denser so dense text stays crisp. */
-  .settings-page select::picker(select) {background-color:rgba(234,229,250,.88);background-image:linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 30%,rgba(255,255,255,0) 62%,rgba(72,53,116,.04) 100%);-webkit-backdrop-filter:blur(14px) saturate(1.45);backdrop-filter:blur(14px) saturate(1.45);border:1px solid rgba(255,255,255,.74);border-radius:18px;box-shadow:0 18px 42px -12px rgba(58,38,96,.38),0 2px 6px rgba(58,38,96,.12),inset 0 1px 0 rgba(255,255,255,.92),inset 0 -1px 0 rgba(62,40,100,.14);padding:6px;max-height:min(360px,50vh);max-inline-size:calc(100vw - 32px);overflow:auto;color:var(--ink)}
+  .settings-page select::picker(select) {background:rgba(250,247,244,.92);-webkit-backdrop-filter:blur(8px) saturate(1.08);backdrop-filter:blur(8px) saturate(1.08);border:1px solid rgba(124,107,117,.24);border-radius:17px;box-shadow:0 12px 30px -13px rgba(80,62,73,.33),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(97,78,91,.12);padding:6px;max-height:min(360px,50vh);max-inline-size:calc(100vw - 32px);overflow:auto;color:var(--ink)}
   .settings-page select option {min-height:38px;padding:8px 10px;border-radius:9px;background:transparent;color:var(--ink);white-space:normal;overflow-wrap:anywhere;transition:background-color 180ms cubic-bezier(.22,1,.36,1)}
-  .settings-page select option:hover {background:rgba(81,69,205,.10)}
-  .settings-page select option:checked {background:rgba(81,69,205,.16)}
+  .settings-page select option:hover {background:rgba(33,109,155,.09)}
+  .settings-page select option:checked {background:rgba(33,109,155,.14)}
   .settings-page select option:focus-visible {outline:2px solid var(--accent);outline-offset:-2px}
   .settings-page select option::checkmark {content:'✓';font:600 14px/1 "Segoe UI Symbol",sans-serif;color:var(--accent);margin-inline-end:8px}
 }
-@supports not (appearance:base-select) {
-  .settings-page select option {background:var(--glass-fallback);color:var(--ink)}
-}
+@supports not (appearance:base-select) {.settings-page select option {background:var(--settings-glass-fallback);color:var(--ink)}}
+@supports not (mask-composite:exclude) {.settings-page .settings-content>.glass-material {display:none}}
+@supports not (mask-composite:exclude) {.settings-page .settings-toolbar>.glass-material {display:none}}
 @media(max-width:780px) {
-  .settings-page {padding:20px}
-  .settings-page .settings-header {padding-bottom:24px}
-  .settings-page h1 {font-size:28px}
+  .settings-page {padding:12px 18px 16px;--hero-height:166px}
+  .settings-page .settings-header {padding-bottom:20px}
+  .settings-page .header-copy {width:52%}
+  .settings-page .hero-art {left:40%;right:-12px}
+  .settings-page h1 {font-size:25px}
   .settings-page .settings-grid {grid-template-columns:minmax(0,1fr);gap:var(--section-gap)}
-  .settings-page .settings-scroll {padding-right:8px}
-  .settings-page .settings-toolbar {padding:14px 16px;margin-top:18px}
+  .settings-page .settings-scroll {padding:22px 20px 24px}
+  .settings-page .font-grid {grid-template-columns:minmax(0,1fr)}
+  .settings-page .character-corner {display:none}
+  .settings-page .caption-intro {grid-template-columns:minmax(0,1fr);min-height:0;margin-bottom:20px}
+  .settings-page .settings-toolbar {padding:12px 15px;margin-top:14px}
 }
 @media(max-width:520px) {
-  .settings-page {padding:18px 14px}
-  .settings-page h1 {font-size:26px}
-  .settings-page .settings-toolbar {grid-template-columns:minmax(0,1fr);gap:10px}
+  .settings-page {padding:10px 12px 14px;--hero-height:158px}
+  .settings-page .header-copy {width:58%;padding-top:4px}
+  .settings-page .hero-art {left:44%;right:-9px}
+  .settings-page .hero-wave {height:29px}
+  .settings-page .eyebrow {font-size:9px;letter-spacing:.06em}
+  .settings-page h1 {font-size:23px}
+  .settings-page .connection-pill {font-size:11px;padding-inline:8px;margin-top:9px}
+  .settings-page .settings-scroll {padding:20px 16px 22px}
+  .settings-page .settings-toolbar {grid-template-columns:minmax(0,1fr);gap:9px}
   .settings-page #notice {grid-column:1;grid-row:auto}
   .settings-page #notice:empty {display:none}
   .settings-page .actions {grid-column:1;grid-row:auto;flex-wrap:wrap}
   .settings-page .actions button {flex:1}
   .settings-page .keyboard-help {font-size:11px}
 }
-@media(max-height:520px) {
-  .settings-page {padding-top:12px;padding-bottom:12px}
-  .settings-page .settings-header {padding-bottom:14px}
-  .settings-page .settings-toolbar {margin-top:12px;padding-block:10px}
+@media(max-height:680px) {
+  .settings-page {padding-top:8px;padding-bottom:12px;--hero-height:130px}
+  .settings-page .settings-header {padding-top:4px;padding-bottom:15px}
+  .settings-page .header-copy {padding-top:2px}
+  .settings-page h1 {font-size:24px;margin-top:4px}
+  .settings-page .connection-pill {margin-top:7px}
+  .settings-page .hero-wave {height:27px}
+  .settings-page .settings-scroll {padding-block:19px}
+  .settings-page .settings-toolbar {margin-top:10px;padding-block:9px}
+  .settings-page .character-corner {display:none}
+  .settings-page .caption-intro {grid-template-columns:minmax(0,1fr);min-height:0;margin-bottom:20px}
 }
 @media(prefers-reduced-motion:reduce) {
   .settings-page *,.settings-page *::before,.settings-page *::after {transition:none!important;animation:none!important}
   .settings-page button:hover,.settings-page button:active {transform:none}
 }
-/* Reduced transparency and missing filter support keep a stable, readable surface. */
+.settings-page.settings-glass-reduced .glass-material {display:none}
+.settings-page.settings-glass-reduced .glass-field,.settings-page.settings-glass-reduced .settings-content,.settings-page.settings-glass-reduced .settings-toolbar,.settings-page.settings-glass-reduced .connection-pill,.settings-page.settings-glass-reduced button:not(.primary) {background:var(--settings-glass-fallback)}
+.settings-page.settings-glass-reduced select::picker(select) {background:var(--settings-glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}
 @media(prefers-reduced-transparency:reduce) {
-  .settings-page {background-image:none}
-  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-  .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .settings-page .glass-material {display:none}
+  .settings-page .glass-field,.settings-page .settings-content,.settings-page .settings-toolbar,.settings-page .connection-pill,.settings-page button:not(.primary) {background:var(--settings-glass-fallback)}
+  .settings-page select::picker(select) {background:var(--settings-glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}
 }
-:root[data-transparency=reduce] .settings-page {background-image:none}
-:root[data-transparency=reduce] .settings-page input[type=text],:root[data-transparency=reduce] .settings-page select,:root[data-transparency=reduce] .settings-page input[type=color],:root[data-transparency=reduce] .settings-page .settings-toolbar,:root[data-transparency=reduce] .settings-page button {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-:root[data-transparency=reduce] .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+:root[data-transparency=reduce] .settings-page .glass-material {display:none}
+:root[data-transparency=reduce] .settings-page .glass-field,:root[data-transparency=reduce] .settings-page .settings-content,:root[data-transparency=reduce] .settings-page .settings-toolbar,:root[data-transparency=reduce] .settings-page .connection-pill,:root[data-transparency=reduce] .settings-page button:not(.primary) {background:var(--settings-glass-fallback)}
+:root[data-transparency=reduce] .settings-page select::picker(select) {background:var(--settings-glass-fallback);backdrop-filter:none;-webkit-backdrop-filter:none}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background-color:var(--glass-fallback);background-image:none}
-  .settings-page select::picker(select) {background-color:var(--glass-fallback);background-image:none}
+  .settings-page .glass-material {display:none}
+  .settings-page .glass-field,.settings-page .settings-content,.settings-page .settings-toolbar,.settings-page .connection-pill,.settings-page button:not(.primary) {background:var(--settings-glass-fallback)}
+  .settings-page select::picker(select) {background:var(--settings-glass-fallback)}
 }
 @media(forced-colors:active) {
   .settings-page {--ink:CanvasText;--muted:CanvasText;--accent:Highlight;background:Canvas;color:CanvasText}
-  .settings-page input[type=text],.settings-page select,.settings-page input[type=color],.settings-page .settings-toolbar,.settings-page button {background:Canvas;color:CanvasText;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+  .settings-page .hero-art,.settings-page .settings-decor,.settings-page .character-corner,.settings-page .glass-material {display:none}
+  .settings-page .settings-header {min-height:0}
+  .settings-page .caption-intro {grid-template-columns:minmax(0,1fr);min-height:0}
+  .settings-page .glass-field,.settings-page .settings-content,.settings-page .settings-toolbar,.settings-page button,.settings-page .connection-pill {background:Canvas;color:CanvasText;box-shadow:none;border:1px solid CanvasText}
   .settings-page select::picker(select) {background:Canvas;color:CanvasText;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-  .settings-page input,.settings-page select,.settings-page button,.settings-page .settings-toolbar {border:1px solid CanvasText}
+  .settings-page button.primary {background:Highlight;color:HighlightText}
   .settings-page :focus-visible {outline-color:Highlight}
 }

@@ -1,0 +1,21 @@
+{
+  "appId": "Mineradio.DesktopLyrics",
+  "productName": "Mineradio 桌面歌词",
+  "win": {
+    "executableName": "MineradioLyrics",
+    "icon": "public/icons/app.ico"
+  },
+  "nsis": {
+    "installerIcon": "public/icons/app.ico",
+    "uninstallerIcon": "public/icons/app.ico",
+    "installerHeaderIcon": "public/icons/app.ico"
+  },
+  "extraMetadata": {
+    "mineradioIcons": {
+      "svg": "public/icons/app.svg",
+      "png": "public/icons/app.png",
+      "trayWindows": "public/icons/tray.ico",
+      "trayPng": "public/icons/tray.png"
+    }
+  }
+}
