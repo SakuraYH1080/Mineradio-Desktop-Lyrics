@@ -94,12 +94,12 @@ async function inspect(config,context){
   const inflink=manifests.find(value=>/^InfLink(?:-rs|rs)$/i.test(value.manifest.name));
   const bridge=manifests.find(value=>value.manifest.name==='MineradioBridge');
   // The bridge must be a real folder: its session file is read next to index.js.
-  const bridgeDirectory=bridge&&fs.existsSync(path.join(bridge.directory,'index.js'))?bridge.directory:null;
+  const bridgeDirectory=bridge&&fs.statSync(bridge.directory).isDirectory()?bridge.directory:null;
   const bridgeFiles=bridgeDirectory?BRIDGE_FILES.every(name=>exists(path.join(bridgeDirectory,name))):false;
   let writable=false;if(bridgeFiles)try{fs.accessSync(bridgeDirectory,fs.constants.W_OK);writable=true;}catch{}
   const status={clientExecutable:config.clientExecutable||null,clientFound,version,architecture:arch,loaderFound,loaderHash,
     loaderKnown:loaderHash===KNOWN_LOADER,profile:config.profile||null,inflinkVersion:pluginVersion(inflink),bridgeVersion:bridge?.manifest.version||null,
-    bridgeDirectory,bridgeFiles,writable,filesReady:clientFound&&arch==='x64'&&loaderFound&&!!pluginVersion(inflink)&&bridgeFiles&&writable};
+    bridgeDirectory,bridgeArchive:!!bridge&&!bridgeDirectory,bridgeFiles,writable,filesReady:clientFound&&arch==='x64'&&loaderFound&&!!pluginVersion(inflink)&&bridgeFiles&&writable};
   status.compatibilityKnown=status.filesReady&&version==='3.1.42.205594'&&status.loaderKnown&&status.inflinkVersion==='3.4.0'&&status.bridgeVersion==='0.4.3';
   status.fingerprint=crypto.createHash('sha256').update(JSON.stringify(status)).digest('hex');
   return status;
@@ -107,7 +107,7 @@ async function inspect(config,context){
 function pluginVersion(value){return typeof value?.manifest.version==='string'?value.manifest.version:null;}
 function bridgeDeploymentAllowed(status){
   return status.clientFound&&status.architecture==='x64'&&status.version==='3.1.42.205594'&&
-    status.loaderKnown&&status.inflinkVersion==='3.4.0'&&!!status.profile;
+    status.loaderKnown&&status.inflinkVersion==='3.4.0'&&!!status.profile&&!status.bridgeArchive;
 }
 function deployBridge(config,status,context){
   if(!bridgeDeploymentAllowed(status))throw Error('请先选择已支持的原版网易云及实际 profile，并配置 BetterNCM 1.3.4 x64 / InfLink 3.4.0。未知版本或 DLL 不会被修改。');
@@ -200,6 +200,7 @@ async function prepare(config,context){
     }
     if(choice.response===4){
       try{
+        if(status.bridgeArchive)throw Error('现有 MineradioBridge 是归档插件，无法直接保存会话文件。不会再复制第二份桥接，请先备份并按连接说明改用单一目录形式。');
         if(!bridgeDeploymentAllowed(status))throw Error('尚未满足已记录的兼容条件：网易云 3.1.42.205594 x64、已知 BetterNCM 1.3.4 x64、InfLink 3.4.0 及其实际 profile。请先查看连接说明，不会强行修改。');
         const consent=await dialog.showMessageBox({type:'question',title:'配置内置 MineradioBridge',message:'将内置桥接配置到所选 profile？',detail:'目标：'+(status.bridgeDirectory||path.join(config.profile,'plugins_dev/MineradioBridge'))+'\n仅更新本项目五个源文件，匹配文件不重复复制。旧文件备份到：'+path.join(config.userDirectory,'bridge-backups')+'\n保留 connection.json、账号及其他插件。不会退出网易云；如有更新，请之后自行从其托盘正常退出并重新打开。',buttons:['配置 Bridge','取消'],defaultId:1,cancelId:1,noLink:true});
         if(consent.response!==0)continue;
