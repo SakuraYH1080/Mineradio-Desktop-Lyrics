@@ -137,10 +137,10 @@ class Timeline {
     this.sample = s;
     return events;
   }
-  position() {
+  position(at = this.now()) {
     const a = this.anchor;
     if (!a) return 0;
-    const end = Math.min(this.now(), a.deadline, this.received + this.staleMs);
+    const end = Math.min(at, a.deadline, this.received + this.staleMs);
     return Math.max(
       0,
       Math.min(
@@ -150,13 +150,21 @@ class Timeline {
       ),
     );
   }
+  presentationDeadline(state) {
+    if (!state.connected) return Infinity;
+    const sessionEnd = this.received + this.staleMs;
+    return state.usable && !(this.anchor.pausedConfirmed && this.sample?.status === 'paused')
+      ? Math.min(sessionEnd, this.anchor.deadline)
+      : sessionEnd;
+  }
   snapshot() {
+    const at = this.now();
     const healthy =
-      this.connected && this.now() - this.received <= this.staleMs;
+      this.connected && at - this.received <= this.staleMs;
     const usable =
       healthy &&
       !!this.anchor &&
-      (this.now() <= this.anchor.deadline ||
+      (at <= this.anchor.deadline ||
         (this.anchor.pausedConfirmed && this.sample?.status === "paused"));
     return {
       track: this.sample?.track,
@@ -167,7 +175,7 @@ class Timeline {
       key: this.key,
       connected: healthy,
       usable,
-      position: this.position(),
+      position: this.position(at),
       duration: this.anchor?.duration || 0,
       playing:
         usable && this.sample?.status === "playing" && this.anchor.playing,

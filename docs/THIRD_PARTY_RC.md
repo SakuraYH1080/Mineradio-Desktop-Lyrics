@@ -1,29 +1,29 @@
-# 1.0.0 的许可与第三方组件
+# 1.1.0 候选版的许可与第三方组件
 
-本说明对应 `1.0.0` 正式交付。它记录实际来源与分发范围，不替代各组件随附的完整许可文本。
+此文件记录 `1.1.0` 候选包的来源与分发范围。完整许可随各组件附带。
 
 ## Mineradio 改造关系
 
 上游为 [XxHuberrr/Mineradio-paused](https://github.com/XxHuberrr/Mineradio-paused)，复用基线提交 `d43de565acabfdc1a9c9820a27e81a98ccbebcef`；上游 `package.json` 署名 Mineradio，许可 GPL-3.0-only。原 `LICENSE`、`NOTICE.md` 与相关署名保持不变。
 
-本项目改造为官方网易云播放、独立 Electron 桌面歌词的应用，复用和适配了桌面歌词渲染、解析、交互与最小配色／玻璃逻辑，不加载上游首页、完整场景或音频播放引擎。本项目自有桥接 `MineradioBridge 0.4.3` 源码按本项目 GPL-3.0-only 分发。提供与候选二进制对应的干净源码附件及提交记录，未把个人工程历史、私有日志或账号备份作为源码包。
+本项目由官方网易云播放，并独立显示桌面歌词。复用和适配了桌面歌词渲染、解析、交互、配色及玻璃材质代码。`MineradioBridge 0.4.3` 源码按本项目 GPL-3.0-only 分发。
 
 ## 随应用分发
 
 | 内容 | 许可／来源 | 随包位置 |
 | --- | --- | --- |
 | 本项目、上游改造代码 | GPL-3.0-only | `LICENSE`、`NOTICE.md`，及 `resources/app` 中代码 |
-| Electron 42.4.1 | Electron contributors，MIT | `LICENSE.electron.txt` |
-| Chromium 及 Electron 内含第三方组件 | 各自许可，完整集合随 Electron 运行时提供 | `LICENSES.chromium.html` |
+| Node.js 22.23.5 | Node.js contributors，MIT 及内含组件的各自许可 | `licenses/Node.js.txt` |
+| Microsoft WebView2 Loader 1.0.3537.50 | Microsoft，可再分发许可 | `licenses/WebView2Loader.txt` |
 | NSIS 3.0.4.1 安装器运行代码／压缩模块 | zlib/libpng、bzip2、CPL 1.0 等，以工具链实际 COPYING 为准 | `licenses/NSIS-COPYING.txt`；同份文本保留在源码 `build/licenses` |
 | Instrument Sans 400／500／600 | Instrument Sans Project Authors，SIL OFL 1.1 | `resources/app/public/fonts/OFL.txt` |
-| 本项目原创应用／托盘 SVG、PNG、ICO | 本项目 GPL-3.0-only，未使用其他应用 Logo | `resources/app/public/icons/README.md` |
-| 设置面板人物 PNG | 本轮内置 imagegen 生成，参考构图与服务适用条款说明 | `resources/app/public/assets/settings/SOURCES.md` |
-| PowerShell 鼠标／系统媒体辅助 | 本项目代码；调用 Windows 系统 API | 作为真实 `.ps1` 文件随程序资源分发 |
+| 本项目原创应用／托盘图标 | 本项目 GPL-3.0-only | 启动程序图标、`resources/app/public/icons/tray.ico` |
+| 设置面板人物 WebP | imagegen 生成，原素材的无损转码 | `resources/app/public/assets/settings/SOURCES.md` |
+| PowerShell 系统媒体辅助 | 本项目代码，调用 Windows 系统 API | `resources/app/tools/probe.ps1` |
 
 Instrument Sans 是应用界面自带字体，与用户自行选择的系统字体分开。Windows 本机安装的其他字体文件没有复制到工程、Setup 或附件。
 
-参考图本身、其中作者的授权或商标权没有被本项目转授；素材说明没有宣称取得参考图作者的独立再授权。候选包只保留已生成的本地人物 PNG 及来源说明，不捆绑整张参考截图。
+人物插画的素材来源与使用范围见随包 `SOURCES.md`。
 
 ## 外部插件依赖，不随 Setup 捆绑二进制
 
@@ -38,7 +38,7 @@ Instrument Sans 是应用界面自带字体，与用户自行选择的系统字�
 
 ## 构建工具
 
-目录构建继续使用本地固定 Electron，NSIS 安装器由本轮固定版本的 electron-builder 工具链生成；具体构建版本、源码提交、文件列表和 SHA-256 以本次构建记录与校验附件为准。构建机 Node、Python、Pillow 和 npm 工具环境不是普通用户需要安装的运行依赖，也不把开发机工具缓存打进安装包。
+Visual C++ 构建 Win32 启动程序，electron-builder 生成 NSIS 安装包。应用在用户电脑上调用共享的 WebView2 Evergreen Runtime。Node.js 二进制与 WebView2 SDK 的构建版本和 SHA-256 记录在 `build/runtime.json`。
 
 NSIS 工具链来源为 [electron-builder-binaries 的 nsis-3.0.4.1](https://github.com/electron-userland/electron-builder-binaries/releases/tag/nsis-3.0.4.1)，保留它随附的完整版权与许可文本，不将 NSIS 安装器本身误称为本项目原创。
 

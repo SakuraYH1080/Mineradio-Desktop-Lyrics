@@ -12,7 +12,7 @@ const SCRIPT_FALLBACKS=Object.freeze({
   ko:['Malgun Gothic','Noto Sans KR','Apple SD Gothic Neo','Gulim'],
   cyrillic:['Segoe UI','Arial','Noto Sans','Tahoma'],
 });
-let catalog=null,pending=null;
+let catalog=null,pending=null,job=null;
 // Metadata only: no font files or paths are exported, copied or downloaded.
 // This script runs only when the settings window requests its font dropdown.
 const enumerateScript=String.raw`
@@ -93,28 +93,33 @@ function normalizeCoverage(value){
       ?{covered:row.covered,total}:null];
   }));
 }
-function listFonts(){
+function enumerateWithPowerShell(){
+  return new Promise((resolve,reject)=>{
+    const executable=path.join(process.env.SystemRoot||'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe');
+    job=execFile(executable,['-NoProfile','-NonInteractive','-STA','-EncodedCommand',Buffer.from(enumerateScript,'utf16le').toString('base64')],
+      {windowsHide:true,encoding:'utf8',timeout:20000,maxBuffer:4*1024*1024},(error,stdout,stderr)=>{
+        if(error){const failure=Error('无法读取本机字体列表，请稍后重新打开设置；已保存的字体和默认后备字体仍可使用。',{cause:error});failure.helperStderr=stderr;reject(failure);return}
+        try{resolve(JSON.parse(stdout.replace(/^\uFEFF/,'')))}
+        catch(cause){const failure=Error('本机字体列表读取失败，仍可使用默认字体。',{cause});failure.helperStderr=stderr;reject(failure)}
+      });
+  });
+}
+function listFonts(enumerate=enumerateWithPowerShell){
   if(catalog)return Promise.resolve(catalog.rows);
   if(pending)return pending;
   if(process.platform!=='win32')return Promise.resolve([]);
-  pending=new Promise((resolve,reject)=>{
-    const executable=path.join(process.env.SystemRoot||'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe');
-    execFile(executable,['-NoProfile','-NonInteractive','-STA','-EncodedCommand',Buffer.from(enumerateScript,'utf16le').toString('base64')],
-      {windowsHide:true,encoding:'utf8',timeout:20000,maxBuffer:4*1024*1024},(error,stdout,stderr)=>{
-        if(error){const failure=Error('无法读取本机字体列表，请稍后重新打开设置；已保存的字体和默认后备字体仍可使用。',{cause:error});failure.helperStderr=stderr;reject(failure);return}
-        try{
-          const data=JSON.parse(stdout.replace(/^\uFEFF/,''));
-          const unique=new Map();
-          for(const row of Array.isArray(data)?data:[]){
-            const family=cleanName(row.family);
-            if(family)unique.set(family.toLowerCase(),{family,label:typeof row.label==='string'?row.label.slice(0,320):family,coverage:normalizeCoverage(row.coverage)});
-          }
-          const rows=[...unique.values()].sort((a,b)=>a.label.localeCompare(b.label,'zh-CN',{numeric:true,sensitivity:'base'}));
-          if(!rows.length)throw Error('No usable font metadata');
-          catalog={rows,known:new Set(unique.keys())};resolve(rows);
-        }catch(cause){const failure=Error('本机字体列表读取失败，仍可使用默认字体。',{cause});failure.helperStderr=stderr;reject(failure)}
-      });
-  }).finally(()=>{pending=null});
+  pending=enumerate(COVERAGE_SAMPLES).then(data=>{
+    const unique=new Map();
+    for(const row of data){
+      const family=cleanName(row.family);
+      if(family)unique.set(family.toLowerCase(),{family,label:typeof row.label==='string'?row.label.slice(0,320):family,coverage:normalizeCoverage(row.coverage)});
+    }
+    const rows=[...unique.values()].sort((a,b)=>a.label.localeCompare(b.label,'zh-CN',{numeric:true,sensitivity:'base'}));
+    if(!rows.length)throw Error('本机字体列表读取失败，仍可使用默认字体。');
+    catalog={rows,known:new Set(unique.keys())};
+    return rows;
+  }).finally(()=>{pending=null;job=null});
   return pending;
 }
-module.exports={DEFAULT_FAMILY,SCRIPT_KEYS,LANGUAGE_MODES,COVERAGE_SAMPLES,cleanName,cssFamily,fontProfile,listFonts};
+function stopFontEnumeration() { job?.kill(); }
+module.exports={DEFAULT_FAMILY,SCRIPT_KEYS,LANGUAGE_MODES,COVERAGE_SAMPLES,cleanName,cssFamily,fontProfile,listFonts,stopFontEnumeration};

@@ -173,12 +173,11 @@ function applyStatus(config,status){
   return config;
 }
 async function prepare(config,context){
-  const {app,dialog,record}=context;
+  const {app,dialog,record,shell}=context;
   let status=await inspect(config,context);
   applyStatus(config,status);
   const force=context.force===true||process.argv.includes('--configure-connection');
   if(!force&&status.filesReady&&config.acknowledgedFingerprint===status.fingerprint){record({type:'connection-file-check',status});return config;}
-  const {shell}=require('electron');
   while(true){
     const choice=await dialog.showMessageBox({type:status.filesReady?'info':'warning',title:'Mineradio · 网易云连接设置',
       message:status.filesReady?'插件文件已找到，连接仍待播放数据确认':'先确认网易云与插件，再开始使用',detail:details(config,status),
@@ -217,7 +216,7 @@ async function prepare(config,context){
       continue;
     }
     if(choice.response===3){
-      const file=exists(path.join(path.dirname(process.execPath),'连接说明.txt'))?path.join(path.dirname(process.execPath),'连接说明.txt'):path.join(app.getAppPath(),'docs/INSTALL_1.0_RC.md');
+      const file=exists(path.join(path.dirname(app.getPath('exe')),'连接说明.txt'))?path.join(path.dirname(app.getPath('exe')),'连接说明.txt'):path.join(app.getAppPath(),'docs/INSTALL_1.0_RC.md');
       const error=await shell.openPath(file);if(error)await dialog.showMessageBox({type:'warning',title:'无法打开',message:'未能打开随包说明或桥接目录。',detail:error,buttons:['返回']});
       continue;
     }

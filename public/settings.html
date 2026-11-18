@@ -9,13 +9,13 @@
 <main class="glass-panel">
 <header class="settings-header">
 <div class="header-copy"><span class="eyebrow">MINERADIO / 桌面歌词</span><h1 id="panelTitleHeading">桌面歌词</h1><span class="title-ornament" aria-hidden="true"><i></i><i></i><i></i></span><span class="connection-pill" data-glass="pill"><span class="connection-mark" aria-hidden="true"></span><span id="connectionStatus" role="status">读取连接状态…</span></span></div>
-<div class="hero-art" aria-hidden="true"><img src="assets/settings/hero-duo.png" alt="" decoding="async"><svg class="hero-wave" viewBox="0 0 1200 110" preserveAspectRatio="none"><path d="M0 62C175 115 340 35 530 68S945 132 1200 42V110H0Z"/></svg></div>
+<div class="hero-art" aria-hidden="true"><img src="assets/settings/hero-duo.webp" alt="" decoding="async"><svg class="hero-wave" viewBox="0 0 1200 110" preserveAspectRatio="none"><path d="M0 62C175 115 340 35 530 68S945 132 1200 42V110H0Z"/></svg></div>
 </header>
 <div class="settings-content" data-glass="panel">
 <div class="settings-scroll">
 <div class="settings-grid">
 <div class="captions-column">
-<section aria-labelledby="captions-title"><div class="caption-intro"><div class="caption-intro-copy"><h2 id="captions-title">状态字幕</h2><p class="section-description" id="caption-help">留空即可隐藏。支持 <span class="token">{歌名}</span>、<span class="token">{歌手}</span>；暂停时保留当前歌词。</p></div><figure class="character-corner" aria-hidden="true"><img src="assets/settings/chibi.png" alt="" loading="lazy" decoding="async"></figure></div>
+<section aria-labelledby="captions-title"><div class="caption-intro"><div class="caption-intro-copy"><h2 id="captions-title">状态字幕</h2><p class="section-description" id="caption-help">留空即可隐藏。支持 <span class="token">{歌名}</span>、<span class="token">{歌手}</span>；暂停时保留当前歌词。</p></div><figure class="character-corner" aria-hidden="true"><img src="assets/settings/chibi.webp" alt="" loading="lazy" decoding="async"></figure></div>
 <div class="field"><label for="waiting">未连接／尚未选歌</label><span class="glass-field" data-glass="control"><input id="waiting" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
 <div class="field"><label for="instrumental">纯音乐</label><span class="glass-field" data-glass="control"><input id="instrumental" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
 <div class="field"><label for="missing">暂无歌词／获取失败</label><span class="glass-field" data-glass="control"><input id="missing" type="text" maxlength="240" aria-describedby="caption-help"></span></div>
@@ -56,4 +56,4 @@
 </div>
 </div>
 <footer class="settings-toolbar" data-glass="toolbar"><div id="notice" role="status" aria-live="polite"></div><div class="actions"><button data-glass="button" id="reset" type="button">恢复默认</button><button data-glass="button" class="primary" id="save" type="button">保存设置</button></div><p class="keyboard-help">Ctrl+Alt+H 显隐歌词 · Ctrl+Alt+L 锁定／解锁</p></footer>
-</main><script src="lyric-typography.js"></script><script src="settings.js"></script><script src="settings-glass.js"></script></body></html>
+</main><script src="webview-bridge.js"></script><script src="lyric-typography.js"></script><script src="settings.js"></script><script src="settings-glass.js"></script></body></html>

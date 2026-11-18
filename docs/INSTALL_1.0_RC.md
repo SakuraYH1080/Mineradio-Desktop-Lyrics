@@ -1,23 +1,23 @@
-# Mineradio 桌面歌词 1.0.0 安装与使用
-
-这是 **1.0.0 正式发布**，不表示全新环境安装与播放已全面验收。本轮只做正式发布的必要接线、构建并核对文件、版本与校验值，没有执行候选安装、升级、卸载或播放测试。以前用户认可的主机体验与 VMware 记录可供参考，不能替代本候选包的手动验收。
+# Mineradio 桌面歌词安装与使用
 
 ## 安装包做什么
 
-网易云官方 Windows 客户端负责选歌和播放，Mineradio 保留独立桌面歌词、同步、长句滚动、真实 PCM 动效及设置功能。安装器只安装歌词程序和它需要的 Electron 运行时、辅助脚本、界面字体、图标、许可与说明；无需另外安装 Node.js 或执行 npm。
+网易云官方 Windows 客户端负责选歌和播放。Mineradio 提供独立桌面歌词、同步、长句滚动、真实 PCM 动效及设置功能。
+
+1.1.0 候选版使用系统共享的 Microsoft Edge WebView2 Evergreen Runtime。缺少时，启动程序会提供微软官方下载入口。歌词后端随包提供，可直接从 GUI EXE 启动。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
 
 **已安装歌词程序，不等于网易云插件连接就绪。** 网易云客户端、BetterNCM 和 InfLink 不随 Setup 分发。安装器不会复制第二套网易云、改账号、下载音乐、覆盖未知 DLL、修改其他插件或新增开机启动项。
 
 ## 1. 安装
 
 1. 核对附件中的 `SHA256SUMS.txt`，确认下载文件与交付校验值一致。
-2. 运行带 `1.0.0`、`x64` 和 `Setup.exe` 的安装包。默认按当前 Windows 用户安装到 `%LOCALAPPDATA%\Programs\MineradioLyrics`，可在向导中改目录，不要求 D 盘，也不需要管理员安装模式。
+2. 运行 Windows x64 的 `Setup.exe`。默认按当前 Windows 用户安装到 `%LOCALAPPDATA%\Programs\MineradioLyrics`，可在向导中选择目录。
 3. 完成后手动打开桌面或开始菜单的 **Mineradio 桌面歌词**。它直接运行 `MineradioLyrics.exe`，没有 CMD／PowerShell／npm 启动中转。
 4. 当前未配置插件时，按下面的首次连接说明处理；不必重新安装歌词程序。
 
-安装结束不会自动运行程序。本轮没有在开发主机自动执行该安装包。
+安装结束后，从桌面或开始菜单启动。
 
-本版本尚未配置代码签名证书；Windows 可能显示未知发布者。请结合下载来源与 SHA-256 确认文件身份，此项仍待用户实际安装观察。
+可在安装包的“属性 → 数字签名”中核对发布者，并对照 `SHA256SUMS.txt` 核对文件。新的 GitHub 安装包即使签名有效，也可能在积累下载声誉期间触发 SmartScreen 提示。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
 ## 2. 首次连接检查
 
@@ -50,7 +50,7 @@
 
 ## 3. 日常操作
 
-- `Ctrl+Alt+H`：立即显示／隐藏歌词；再次打开程序会唤回已有实例。
+- `Ctrl+Alt+H`：显示／隐藏歌词。隐藏满 5 秒释放歌词窗口。再次打开程序会唤回已有实例并同步当前歌词。
 - `Ctrl+Alt+L`：解锁拖动／锁定穿透。托盘菜单显示当前可执行动作。
 - 托盘 → **歌词设置**：状态字幕、封面／固定配色、通用与分文字系统字体、字幕预览、面板标题、保存和恢复默认。
 - 托盘 → **网易云连接设置**：仅重启歌词以重新打开连接向导，音乐继续。
@@ -85,10 +85,8 @@ BetterNCM 与 InfLink 由用户另行配置；自有 Bridge 经向导确认部�
 | BetterNCM | 1.3.4 x64 |
 | InfLink-rs | 3.4.0 |
 | MineradioBridge | 0.4.3，保留 header-compat 与 PCM 新鲜度修补 |
-| Electron | 固定 42.4.1，本轮不升级 |
+| 界面运行时 | 1.1.0 候选版使用 Microsoft Edge WebView2 Evergreen Runtime |
 
 现有在线歌词接口和音源权限会影响歌词与 PCM 可用性。SDK 某些音源不提供可靠原生 PCM PTS，桥接沿用带质量标记的新鲜度处理，不能将回调接收时间当作精确声学采样时间。没有为新客户端版本做兼容承诺。
 
-本轮保留用户已认可的 DSH／暖白最终前端；另行约定但尚未提供的额外背景模板状态为 **等待用户模板**，没有因此回退现有前端。
-
-**打包成功不等于安装与播放测试通过。** 待用户手动确认：安装／升级／卸载入口、首次依赖检查、已有设置与位置恢复、真实歌词及节奏连接、字体和界面效果。本轮没有执行自动测试、生产安装卸载、网易云控制、VMware 或截图巡检。
+候选版的安装、升级、卸载和真实网易云播放联动仍待验收。

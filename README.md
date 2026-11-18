@@ -1,10 +1,12 @@
 <img src="public/icons/app.svg" width="80" height="80" alt="Mineradio 桌面歌词">
 
-# Mineradio 桌面歌词 1.0.0
+# Mineradio 桌面歌词
 
 继续用官方网易云 Windows 客户端选歌和播放，独立显示 Mineradio 风格的动态桌面歌词。
 
-**[下载 Windows x64 安装版 Setup.exe](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Setup.exe)** · [可选便携版](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Portable.zip) · [发布说明与校验文件](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.0.0)
+**[下载 1.0.0 正式版 Windows x64 安装包](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Setup.exe)** · [正式版便携包](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Portable.zip) · [发布说明与校验文件](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.0.0)
+
+**[下载 1.1.0-rc.2 预发布版](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.1.0-rc.2)**。候选包使用 Windows 的共享 Microsoft Edge WebView2 Evergreen Runtime。缺少运行时的设备可从微软下载安装。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
 
 安装版与便携版二选一即可。普通用户无需安装 Node、npm 或开发环境；源码 ZIP 用于开发和复现构建。
 
@@ -18,7 +20,7 @@
 
 已有验证组合为 **Windows 11 x64、网易云 3.1.42.205594 x64、BetterNCM 1.3.4 x64、InfLink-rs 3.4.0、MineradioBridge 0.4.3**。自动 Bridge 部署仅在这些已记录的客户端／加载器／InfLink 条件匹配时开放；其他版本尚未验证。文件检测与真实连接状态分开判断，不宣称任意版本装完即用。
 
-本版本未配置代码签名，Windows 可能提示未知发布者。请核对 GitHub 下载来源与 SHA256SUMS.txt，不需要关闭系统防护。
+1.0.0 和已生成的未签名候选包可能触发 SmartScreen 提示。正式签名附件会在构建记录中列出经 Windows 验证的发布者和签名状态。[Windows 签名与 GitHub 发布](docs/WINDOWS_SIGNING.md)
 
 ## 已有功能
 
@@ -38,6 +40,8 @@
 - 托盘 → **网易云连接设置**：只重启歌词并重新打开连接向导，音乐继续。
 - 托盘 → **退出**：仅退出歌词，网易云继续播放。
 
+歌词隐藏 5 秒后会释放渲染窗口，播放连接继续运行。再次显示时先同步当前歌词，再显示窗口。
+
 设置、连接配置与窗口位置保存在 `%APPDATA%\MineradioExternalLyrics`，升级和卸载默认保留，沿用旧单字体迁移及 EFS 兼容。卸载仅删除本程序登记的安装文件和入口，不删除网易云、账号、音乐、第三方插件或私人备份。
 
 ## 常见问题与限制
@@ -48,21 +52,21 @@
 - **字体缺字**：使用后备字体；代表文字预览不等于完整字库覆盖。纯汉字语言不确定时可用现有语言选项纠正。
 - **安装候选升级**：退出旧歌词再运行新版安装器，音乐可继续。手工部署目录不会被自动删除；不要同时运行两套歌词入口。
 
-本次正式发布仅完成版本、语法、构建、资源/许可/源码对应及 GitHub 元数据静态核对，未执行自动安装、升级、卸载或播放测试。先前主机体验得到用户认可，不等于此安装包通过全新环境验收。额外背景模板仍为 **等待用户模板**，不影响现有界面。
-
 ## 源码与构建
 
-开发者需要 Windows x64、Node.js ≥22.12、Python ≥3.10。运行安装版不需要这些工具。
+构建需要 Windows x64、带 C++ 桌面开发组件和 Windows SDK 的 Visual Studio 2022 或更新版、Node.js ≥22.12 及 Python ≥3.10。构建脚本按 `build/runtime.json` 下载和校验 Node.js x64 可执行文件与 WebView2 SDK。Electron 开发入口仍可用，NSIS 使用已经构建的 Win32 应用目录。
 
 ```powershell
 npm ci
-python tools/build-desktop.py --output .runtime/release-1.0.0
-npm run build:setup -- --prepackaged .runtime/release-1.0.0 --output artifacts/1.0.0
-python tools/package-candidate.py --directory .runtime/release-1.0.0 --release artifacts/1.0.0
+python tools/build-desktop.py --output .runtime/release-1.1.0-rc.2
+npm run build:setup -- --prepackaged .runtime/release-1.1.0-rc.2 --output artifacts/1.1.0-rc.2
+python tools/package-candidate.py --directory .runtime/release-1.1.0-rc.2 --release artifacts/1.1.0-rc.2
 ```
 
-输出目录必须不存在；脚本不清理已有产物。固定 Electron 42.4.1 / electron-builder 26.18.1 / NSIS 3.0.4.1，不升级运行时。资源保持实体 `resources/app`，辅助 PowerShell 可直接读取；用户应用不依赖全局 Node/npm 或开发机路径。源码包记录真实提交和文件哈希，不包含私人开发历史。
+为每次构建指定新输出目录。`resources/app` 按发布清单装入界面、歌词逻辑、连接设置和内置 Bridge。应用自带 Node.js，复用系统 WebView2。源码包记录基线提交和实际打包文件的哈希。
+
+以上命令生成未签名候选包。需要签名发布时，使用 `npm run build:setup:signed`，签名和验签通过后再生成便携附件与 SHA-256 校验文件。[Windows 签名与 GitHub 发布](docs/WINDOWS_SIGNING.md)
 
 ## 来源与许可
 
-基于 [XxHuberrr/Mineradio-paused](https://github.com/XxHuberrr/Mineradio-paused) 提交 `d43de565acabfdc1a9c9820a27e81a98ccbebcef` 改造，沿用 GPLv3 与原作者署名。见 [LICENSE](LICENSE)、[NOTICE](NOTICE.md)、[第三方说明](docs/THIRD_PARTY_RC.md) 和[更新记录](CHANGELOG.md)。Electron/Chromium、Instrument Sans OFL、NSIS 许可及素材来源说明随包保留。本机系统字体、网易云本体与账号数据不分发。
+基于 [XxHuberrr/Mineradio-paused](https://github.com/XxHuberrr/Mineradio-paused) 提交 `d43de565acabfdc1a9c9820a27e81a98ccbebcef` 改造，沿用 GPLv3 与原作者署名。Node.js、WebView2 Loader、Instrument Sans OFL、NSIS 许可及素材来源说明随候选包提供。[LICENSE](LICENSE) · [NOTICE](NOTICE.md) · [第三方说明](docs/THIRD_PARTY_RC.md) · [更新记录](CHANGELOG.md)

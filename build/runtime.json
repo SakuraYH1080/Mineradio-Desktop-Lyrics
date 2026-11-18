@@ -1,0 +1,12 @@
+{
+  "node": {
+    "version": "22.23.5",
+    "bytes": 87077704,
+    "sha256": "247e9693d316da9857e44990e5e11709f596f18112251b8026ec6eed80bdf38a",
+    "licenseSha256": "c738ae413cf561f174e34f6961f8ca458aae2369a73640dda6234c629b98bcc4"
+  },
+  "webview2Sdk": {
+    "version": "1.0.3537.50",
+    "sha256": "5ea526bbd728adda0da4d31219267e96460494a427e4894c4e09d9f320f4b9aa"
+  }
+}

@@ -1,7 +1,7 @@
 # 第三方组件与字体
 
 - **Mineradio-paused**：GPL-3.0-only，作者 XxHuberrr / Mineradio 及贡献者。提取和修改关系见 NOTICE.md，完整 GPLv3 见 LICENSE，原署名保留于 docs/UPSTREAM_NOTICE.md。
-- **Electron 42.4.1**：Electron contributors，MIT。发布 ZIP 原样保留 node_modules/electron/dist/LICENSE 与 LICENSES.chromium.html，涵盖 Chromium、Node.js、FFmpeg 等组件第三方声明，未重新授权这些组件。源码 npm 开发依赖固定于 package-lock.json，许可保留在各包内。
+- **Electron 42.4.1**：Electron contributors，MIT。用于源码开发入口。1.1.0 候选包使用 Node.js 与 WebView2 Loader，两者的许可位于安装目录 `licenses`。系统提供共享的 WebView2 Evergreen Runtime。
 - **Instrument Sans**：Copyright 2022 The Instrument Sans Project Authors，SIL Open Font License 1.1。仅三个未修改 WOFF2 随包，完整许可、来源与哈希在 public/fonts/OFL.txt 和 README.md。名称及许可不变。
 - **系统字体**：只读取名称并选用，不复制字体文件；系统和用户字体各自许可不受本项目 GPL 覆盖。
 - **BetterNCM 1.3.4 / InfLink-rs 3.4.0**：外部安装依赖，不捆绑加载器或原生插件。固定来源与哈希见 docs/INSTALL.md；获取和使用遵守原项目许可。本仓库只含独立实现的 MineradioBridge。

@@ -1,4 +1,4 @@
-/* One DOM shaping result for text, karaoke pixels, fitting, scrolling and Canvas. */
+/* One DOM shaping result for text, karaoke pixels, fitting and scrolling. */
 (function () {
   'use strict';
   function DesktopLyricLayout(line) {
@@ -38,9 +38,6 @@
       measured.appendChild(copy);
       this.nodes.push(copy);
     }
-    this.baselineMarker = document.createElement('span');
-    Object.assign(this.baselineMarker.style, {display:'inline-block',width:'0',height:'0',padding:'0',margin:'0',verticalAlign:'baseline'});
-    measured.appendChild(this.baselineMarker);
     this.line.replaceChildren(visible);
     this.measurement.replaceChildren(measured);
     this.invalidate();
@@ -69,16 +66,13 @@
   DesktopLyricLayout.prototype.commit = function (size, weight, spacing, lineHeight) {
     var key = this.setStyle(size,weight,spacing,lineHeight);
     if (this.layout && this.layout.styleKey === key) return this.layout;
-    var box = this.measurement.getBoundingClientRect(), clusters = [], positioned = [];
-    var baseline = this.baselineMarker.getBoundingClientRect().top - box.top;
+    var box = this.measurement.getBoundingClientRect(), clusters = [];
+    var range = document.createRange();
     for (var i=0;i<this.runs.length;i++) {
       var run = this.runs[i], span = this.nodes[i], node = span.firstChild;
       if (!node) continue;
       var left = span.getBoundingClientRect().left - box.left;
-      var range = document.createRange();
-      range.setStart(node,0);range.setEnd(node,node.length);
-      var width = range.getBoundingClientRect().width;
-      positioned.push({text:run.text,fontFamily:run.fontFamily,left:left,width:width});
+      range.setStart(node,0);
       var previous = left;
       for (var part of window.LyricTypography.graphemes(run.text)) {
         range.setEnd(node,part.end);
@@ -87,9 +81,7 @@
         previous = right;
       }
     }
-    this.layout = {styleKey:key,size:size,weight:weight,spacing:(size*spacing).toFixed(2)+'px',
-      width:Math.max(1,box.width),height:Math.max(1,box.height),baseline:baseline,
-      runs:positioned,clusters:clusters,length:this.text.length};
+    this.layout = {styleKey:key,width:Math.max(1,box.width),clusters:clusters,length:this.text.length};
     return this.layout;
   };
   DesktopLyricLayout.prototype.pixelProgress = function (value) {
@@ -99,20 +91,6 @@
     while(low<high){var mid=(low+high)>>1;if(list[mid].end<target)low=mid+1;else high=mid;}
     var item=list[low], fraction=Math.max(0,Math.min(1,(target-item.start)/Math.max(1,item.end-item.start)));
     return Math.max(0,Math.min(1,(item.left+(item.right-item.left)*fraction)/layout.width));
-  };
-  DesktopLyricLayout.prototype.paint = function (ctx, x, y, stroke) {
-    var layout=this.layout;if(!layout)return;
-    for (var run of layout.runs) {
-      ctx.save();ctx.font=layout.weight+' '+layout.size+'px '+run.fontFamily;
-      ctx.textAlign='left';ctx.textBaseline='alphabetic';
-      if ('letterSpacing' in ctx)ctx.letterSpacing=layout.spacing;
-      var nativeWidth=ctx.measureText(run.text).width;
-      ctx.translate(x-layout.width/2+run.left,y-layout.height/2+layout.baseline);
-      // Use the exact DOM-shaped advance even on a Canvas lacking letterSpacing.
-      if(nativeWidth>0)ctx.scale(run.width/nativeWidth,1);
-      if(stroke)ctx.strokeText(run.text,0,0);else ctx.fillText(run.text,0,0);
-      ctx.restore();
-    }
   };
   window.DesktopLyricLayout = DesktopLyricLayout;
 })();

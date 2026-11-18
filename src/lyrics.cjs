@@ -249,29 +249,43 @@ class Lyrics {
     return pending;
   }
 }
+const lyricIndex = new WeakMap();
+function indexedLines(value) {
+  const cached = lyricIndex.get(value);
+  if (cached && cached.source === value.lines) return cached.lines;
+  const lines = (value.lines || []).filter(line => line && !line.fallback &&
+    Number.isFinite(line.t) && !context.isNoLyricText(line.text));
+  const indexed = lines.map((line, index) => ({
+    line,
+    key: [index, line.t, line.text].join('|'),
+    span: Math.max(.75, (lines[index + 1]?.t || line.t + line.duration) - line.t),
+  }));
+  lyricIndex.set(value, { source: value.lines, lines: indexed });
+  return indexed;
+}
 function locate(value, time) {
-  const lines = (value.lines || []).filter((l) => l && !l.fallback && Number.isFinite(l.t) && !context.isNoLyricText(l.text));
-  let index = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].t <= time) index = i;
-    else break;
+  const lines = indexedLines(value);
+  // Parsed timestamps are ordered. Select the last entry at an equal timestamp.
+  let start = 0;
+  let end = lines.length;
+  while (start < end) {
+    const middle = (start + end) >> 1;
+    if (lines[middle].line.t <= time) start = middle + 1;
+    else end = middle;
   }
+  const index = start - 1;
   if (index < 0)
     return {
       // Fetch/diagnostic status is never a lyric. The presentation layer owns
       // the metadata caption until the first genuine timed line (credits included).
-      phase: lines.length && Number.isFinite(time) && time < lines[0].t ? 'intro' : 'empty',
+      phase: lines.length && Number.isFinite(time) && time < lines[0].line.t ? 'intro' : 'empty',
       text: '',
       highlightFollow: false,
       progress: 0,
       scrollProgress: 0,
       progressSpan: 4.8,
     };
-  const line = lines[index];
-  const span = Math.max(
-    0.75,
-    (lines[index + 1]?.t || line.t + line.duration) - line.t,
-  );
+  const { line, key, span } = lines[index];
   // LRC has no word timing: deliberately disable word/highlight interpolation.
   let progress = 0;
   if (line.words?.length) {
@@ -289,7 +303,7 @@ function locate(value, time) {
     progressMode: line.words?.length ? "word" : "line",
     // Renderer must not invent uniform progress through a word-timing gap.
     progressVelocity: line.words?.length ? 0 : null,
-    lineKey: `${index}|${line.t}|${line.text}`,
+    lineKey: key,
     progressSpan: span,
     highlightFollow: !!line.words?.length,
   };

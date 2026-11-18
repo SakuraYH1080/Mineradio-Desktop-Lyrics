@@ -1,6 +1,8 @@
 'use strict';
 const $=id=>document.getElementById(id);
 let initial,previewSerial=0,fontRows=[],fontsReady=false,fontFailure=false;
+const fontLookup=new Map();
+const expandedFontLists=new Set();
 const fontScripts=['zh','latin','ja','ko','cyrillic'];
 const fontModes=['auto','zh','ja','ko'];
 const fontControls=[{key:'default',id:'fontFamily'},...fontScripts.map(key=>({key,id:'fontFamily-'+key}))];
@@ -22,10 +24,13 @@ function coverageLabel(row,script){
 }
 function selectFont(value,script='default'){
   const name=typeof value==='string'?value:'',select=$(script==='default'?'fontFamily':'fontFamily-'+script);
-  select.replaceChildren(fontOption(script==='default'?'默认字体':'沿用通用默认',''));
-  for(const row of fontRows)select.add(fontOption(coverageLabel(row,script),row.family));
-  const match=fontRows.find(row=>row.family.toLowerCase()===name.toLowerCase());
-  if(name&&!match)select.add(fontOption((fontsReady?'不可用，使用后备字体：':'已保存：')+name,name));
+  const match=fontLookup.get(name.toLowerCase());
+  const options=document.createDocumentFragment();
+  options.append(fontOption(script==='default'?'默认字体':'沿用通用默认',''));
+  const rows=expandedFontLists.has(script)?fontRows:match?[match]:[];
+  for(const row of rows)options.append(fontOption(coverageLabel(row,script),row.family));
+  if(name&&!match)options.append(fontOption((fontsReady?'不可用，使用后备字体：':'已保存：')+name,name));
+  select.replaceChildren(options);
   select.value=match?match.family:name;
   select.title=select.selectedOptions[0]?.textContent||'默认字体';
   select.style.fontFamily=fontStyle(select.value||(script==='default'?'':$('fontFamily').value));
@@ -33,6 +38,11 @@ function selectFont(value,script='default'){
 function selectFonts(value){
   selectFont(value.fontFamily);
   for(const script of fontScripts)selectFont(value.fontFamilies?.[script],script);
+}
+function prepareFontList(script,select){
+  if(!fontsReady||expandedFontLists.has(script))return;
+  expandedFontLists.add(script);
+  selectFont(select.value,script);
 }
 function renderRuns(element,text,families,language='auto'){
   const fragments=window.LyricTypography?.createRuns(text,{families,language,context:'auto'})||[{text,fontFamily:families.default}];
@@ -54,7 +64,7 @@ function renderFontSamples(families,language,weight){
 function fontNotice(){
   if(fontFailure){$('font-notice').textContent='暂时无法读取字体列表，可继续使用默认或已保存的字体；重新打开设置可重试。';return}
   if(!fontsReady){$('font-notice').textContent='正在读取本机字体，可先使用默认或已保存的字体。';return}
-  if(fontControls.some(({id})=>$(id).value&&!fontRows.some(row=>row.family.toLowerCase()===$(id).value.toLowerCase()))){$('font-notice').textContent='部分已保存字体当前不可用，将使用通用默认或后备字体。代表字符覆盖不等于支持全部歌词。';return}
+  if(fontControls.some(({id})=>$(id).value&&!fontLookup.has($(id).value.toLowerCase()))){$('font-notice').textContent='部分已保存字体当前不可用，将使用通用默认或后备字体。代表字符覆盖不等于支持全部歌词。';return}
   $('font-notice').textContent='列表仅标注代表字符覆盖，不代表支持全部歌词；缺字仍使用后备字体。字体按需读取并缓存，安装或卸载后重启歌词刷新。仅影响歌词与预览，设置面板字体不变。';
 }
 function fill(value){
@@ -89,7 +99,15 @@ function preview(){
   }).catch(e=>{$('notice').textContent=e.message});
 }
 async function loadFonts(){
-  try{fontRows=await window.lyricSettings.fonts();fontsReady=true;selectFonts(read());preview()}
+  try{
+    fontRows=await window.lyricSettings.fonts();
+    for(const row of fontRows)fontLookup.set(row.family.toLowerCase(),row);
+    fontsReady=true;
+    const active=fontControls.find(({id})=>$(id)===document.activeElement);
+    if(active)expandedFontLists.add(active.key);
+    selectFonts(read());
+    preview();
+  }
   catch(_){fontFailure=true;fontNotice()}
 }
 function renderConnection(connection){
@@ -105,7 +123,12 @@ document.addEventListener('input',event=>{
 });
 $('panelTitle').addEventListener('compositionend',()=>previewPanelTitle());
 $('previewState').addEventListener('change',preview);
-for(const {id} of fontControls)$(id).addEventListener('change',preview);
+for(const {id,key} of fontControls){
+  const select=$(id);
+  select.addEventListener('focus',()=>prepareFontList(key,select));
+  select.addEventListener('pointerdown',()=>prepareFontList(key,select));
+  // Select changes already bubble an input event to the panel preview.
+}
 $('lyricLanguage').addEventListener('change',preview);
 $('reset').onclick=()=>{fill(initial.defaults);$('notice').textContent='已恢复默认，点击保存后生效。'};
 $('save').onclick=async()=>{try{const saved=await window.lyricSettings.save(read());fill(saved);$('notice').textContent='已保存，重启后仍会保留。'}catch(e){$('notice').textContent='保存失败：'+e.message}};

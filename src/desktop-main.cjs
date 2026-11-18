@@ -1,27 +1,30 @@
-// Packaged GUI entry: no shell launcher, no global Node/npm, durable diagnostics.
-const {app, dialog} = require('electron');
+// Packaged entry started by MineradioLyrics.exe. Stdout is the WebView2 protocol.
 const fs = require('node:fs');
 const path = require('node:path');
-const util = require('node:util');
-const identity = require('../build/windows-app.json');
-app.setName(identity.productName);
-app.setAppUserModelId(identity.appId);
-const directory = path.join(app.getPath('appData'), 'MineradioExternalLyrics', 'logs', 'desktop-'+new Date().toISOString().replace(/[:.]/g, '-')+'-'+process.pid);
-fs.mkdirSync(directory, {recursive:true});
+const { format } = require('node:util');
+const { app, dialog } = require('./webview-host.cjs');
+
+const directory = process.env.MINERADIO_LOG_DIR ||
+  path.join(app.getPath('appData'), 'MineradioExternalLyrics', 'logs');
+fs.mkdirSync(directory, { recursive: true });
 process.env.MINERADIO_LOG_DIR = directory;
-app.commandLine.appendSwitch('enable-logging', 'file');
-app.commandLine.appendSwitch('log-file', path.join(directory, 'chromium.log'));
-for (const level of ['log','info','warn','error','debug']) {
-  console[level] = (...values) => fs.appendFileSync(path.join(directory, level==='error'||level==='warn'?'stderr.log':'stdout.log'),
-    new Date().toISOString()+' '+level+' '+util.format(...values)+'\n');
+
+const consoleFile = path.join(directory, 'desktop-console.log');
+fs.writeFileSync(consoleFile, '');
+let logged = 0;
+for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
+  console[level] = (...values) => {
+    if (logged >= 1024 * 1024) return;
+    const line = new Date().toISOString() + ' ' + level + ' ' + format(...values) + '\n';
+    fs.appendFileSync(consoleFile, line);
+    logged += Buffer.byteLength(line);
+  };
 }
-let failing = false;
+
 function fail(error) {
-  if (failing) return;
-  failing = true;
   const detail = error?.stack || String(error);
-  fs.appendFileSync(path.join(directory, 'startup-error.log'), detail+'\n');
-  dialog.showErrorBox('Mineradio 桌面歌词启动失败', detail+'\n\n日志目录：'+directory);
+  fs.writeFileSync(path.join(directory, 'startup-error.log'), detail + '\n');
+  dialog.showErrorBox('Mineradio 桌面歌词启动失败', detail + '\n\n日志目录：' + directory);
   app.exit(1);
 }
 process.on('uncaughtException', fail);

@@ -22,19 +22,14 @@
       --lyric-scroll-x:0px;
       --lyric-edge-width:92px;
       --lyric-mask-edge-width:92px;
-      --lyric-vertical-feather:46px;
       --lyric-css-beat-glow:0px;
       --lyric-shadow-soft:rgba(156,255,223,.34);
       --lyric-shadow-glow:rgba(156,255,223,.26);
-      --lyric-shadow-hot:rgba(255,240,184,.22);
-      --lyric-edge:rgba(4,6,12,.42);
-      --lyric-drop:rgba(156,255,223,.38);
-      --lyric-drop-paused:rgba(156,255,223,.22);
     }
+    body.moving .stage{will-change:transform}
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;user-select:none}
     body{opacity:0;transition:opacity .22s ease;-webkit-app-region:no-drag}
     body.show{opacity:1}
-    canvas{display:none}
     .wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 12px;pointer-events:none}
     .stage{
       position:relative;
@@ -45,7 +40,6 @@
       cursor:default;
       transform-style:preserve-3d;
       transform-origin:center;
-      will-change:transform,filter;
       contain:layout style;
       backface-visibility:hidden;
       -webkit-app-region:no-drag;
@@ -65,19 +59,15 @@
       text-align:center;
       pointer-events:none;
       isolation:isolate;
-      -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--lyric-mask-edge-width),#000 calc(100% - var(--lyric-mask-edge-width)),transparent 100%);
-      mask-image:linear-gradient(90deg,transparent 0,#000 var(--lyric-mask-edge-width),#000 calc(100% - var(--lyric-mask-edge-width)),transparent 100%);
-      filter:drop-shadow(0 1px 2.4px rgba(4,6,12,.58)) drop-shadow(0 0 4.8px rgba(4,6,12,.30));
-      transform:translateZ(0);
-      will-change:transform,filter;
     }
+    .lyric-viewport.scrolling{mask-image:linear-gradient(90deg,transparent 0,#000 var(--lyric-mask-edge-width),#000 calc(100% - var(--lyric-mask-edge-width)),transparent 100%)}
+    body.moving .lyric-viewport.scrolling .lyric-scroll{will-change:transform}
     body.unlocked .stage.hint-visible .lyric-viewport{pointer-events:auto;cursor:move;-webkit-app-region:no-drag}
     .lyric-scroll{
       display:inline-block;
       white-space:nowrap;
       transform:translate3d(var(--lyric-scroll-x),0,0) scaleX(var(--lyric-fit-x));
       transform-origin:center;
-      will-change:transform;
       backface-visibility:hidden;
     }
     .line{
@@ -103,13 +93,12 @@
       -webkit-text-fill-color:transparent;
       -webkit-text-stroke:.18px rgba(255,255,255,.72);
       paint-order:stroke fill;
-      text-shadow:0 0 1px rgba(255,255,255,.34),0 0 calc(6px + var(--lyric-css-beat-glow)) var(--lyric-shadow-soft),0 0 calc(14px + var(--lyric-css-beat-glow)) var(--lyric-shadow-glow);
+      text-shadow:0 1px 2px rgba(4,6,12,.46),0 0 1px rgba(255,255,255,.34),0 0 calc(6px + var(--lyric-css-beat-glow)) var(--lyric-shadow-soft),0 0 calc(14px + var(--lyric-css-beat-glow)) var(--lyric-shadow-glow);
       filter:none;
-      opacity:0;
+      opacity:1;
       transform:translate3d(0,0,0);
       transform-origin:center;
       backface-visibility:hidden;
-      will-change:opacity,filter,transform,background;
     }
     body.highlight .line{
       background:linear-gradient(90deg,
@@ -180,25 +169,23 @@
     .stage.hint-visible .lock-hint{opacity:.94;transform:translateX(-50%) translateY(0) scale(1)}
     @keyframes lyr-in{
       0%{opacity:0;transform:translate3d(0,32px,-120px) rotateX(24deg) rotateY(-18deg) scale(.78);filter:blur(12px)}
-      58%{opacity:1;filter:blur(0)}
-      100%{opacity:1;transform:translate3d(0,0,0) rotateX(0deg) rotateY(0deg) scale(1);filter:blur(0)}
+      58%{opacity:1;filter:none}
+      100%{opacity:1;transform:none;filter:none}
     }
   </style>
 </head>
 <body>
-  <canvas id="fx"></canvas>
   <div class="wrap">
     <div id="stage" class="stage">
       <div id="lyricViewport" class="lyric-viewport"><div id="lyricScroller" class="lyric-scroll"><div id="line" class="line" data-text="Mineradio">Mineradio</div></div></div>
       <div id="lockHint" class="lock-hint"><span class="lock-icon"></span><span id="lockText">&#20013;&#38190;&#35299;&#38145;</span><button id="closeLyricsBtn" class="lyrics-close" type="button" aria-label="Close desktop lyrics">&#20851;&#38381;&#26700;&#38754;&#27468;&#35789;</button></div>
     </div>
   </div>
+  <script src="../public/webview-bridge.js"></script>
   <script src="../public/lyric-typography.js"></script>
   <script src="../public/desktop-typography.js"></script>
   <script>
     'use strict';
-    var canvas = document.getElementById('fx');
-    var ctx = canvas.getContext('2d');
     var stage = document.getElementById('stage');
     var lyricViewport = document.getElementById('lyricViewport');
     var lyricScroller = document.getElementById('lyricScroller');
@@ -207,7 +194,6 @@
     var lockHint = document.getElementById('lockHint');
     var lockText = document.getElementById('lockText');
     var closeLyricsBtn = document.getElementById('closeLyricsBtn');
-    var dpr = 1;
     var lastText = '';
     var progressText = '';
     var displayedProgress = 0;
@@ -226,18 +212,16 @@
     var lastPointerEvent = null;
     var scrollState = { needed:false, width:0, clearWidth:0, start:0, end:0, limit:0, offset:0 };
     var layoutDpr = window.devicePixelRatio || 1;
-    var particles = [];
-    var live = { solar:0, beat:0, bass:0, scale:1, glow:0, spark:0, lift:0 };
+    var live = { solar:0, beat:0, bass:0, scale:1, lift:0 };
     var state = {
       enabled:false,text:'Mineradio',progress:0,scrollProgress:0,scrollSpan:4.8,progressSpan:4.8,progressReceivedAt:0,playing:false,
       playbackTime:0,playbackDuration:0,playbackRate:1,playbackReceivedAt:0,beatMapKey:'',
-      size:1,opacity:.92,clickThrough:true,lyricGlowParticles:false,cinema:true,highlightFollow:false,frameRate:60,
+      size:1,opacity:.92,clickThrough:true,cinema:true,highlightFollow:false,frameRate:60,
       lyricGlow:true,lyricGlowBeat:true,lyricGlowStrength:.35,highBloom:0,beatGlow:0,beatPulse:0,bass:0,feather:.055,
       fontFamily:'Inter,"Noto Sans SC","PingFang SC","Microsoft YaHei",Arial,sans-serif',
       customFont:null,
       fontWeight:900,letterSpacing:0,lineHeight:1,lyricScale:1,
-      colors:{primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'},
-      displayColors:{primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'}
+      colors:{primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'}
     };
     function typographyOptions(value) {
       return {families:value.fontFamilies || {default:value.fontFamily},language:value.lyricLanguage || 'auto',context:value.fontContextLanguage || 'auto'};
@@ -267,7 +251,6 @@
       if (!isFinite(n)) n = fallback;
       return Math.max(min, Math.min(max, n));
     }
-    function rand(seed){ return Math.abs(Math.sin(seed * 9283.173) * 43758.5453) % 1; }
     function isLocked(){ return state.clickThrough !== false; }
     var rootValues = Object.create(null);
     function setRootVar(name, value){
@@ -275,7 +258,7 @@
       rootValues[name] = value;
       document.documentElement.style.setProperty(name, value);
     }
-    var colorCtx = document.createElement('canvas').getContext('2d');
+    var colorCtx = new OffscreenCanvas(1, 1).getContext('2d');
     function parseCssColor(color, fallback) {
       fallback = fallback || '#ffffff';
       try {
@@ -292,18 +275,6 @@
         if (rgb) return { r:Math.round(rgb[1]), g:Math.round(rgb[2]), b:Math.round(rgb[3]), a:rgb[4] == null ? 1 : clamp(rgb[4], 0, 1, 1) };
       } catch (e) {}
       return { r:255, g:255, b:255, a:1 };
-    }
-    function liftedLyricColor(color, fallback, minLum) {
-      var c = parseCssColor(color, fallback);
-      var lum = (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) / 255;
-      var floor = minLum == null ? .34 : minLum;
-      if (lum < floor) {
-        var lift = Math.round((floor - lum) * 255);
-        c.r = Math.min(255, c.r + lift);
-        c.g = Math.min(255, c.g + lift);
-        c.b = Math.min(255, c.b + lift);
-      }
-      return 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
     }
     function normalizeLyricColor(color, fallback) {
       var c = parseCssColor(color, fallback);
@@ -570,21 +541,8 @@
         bass:clamp(bass, 0, 1.2, 0)
       };
     }
-    function ensureParticles(){
-      var count = 220;
-      while (particles.length < count) {
-        var i = particles.length + 1;
-        particles.push({ seed:i * 17.17, lane:rand(i), phase:rand(i * 3.1), depth:rand(i * 7.7), size:.65 + rand(i * 2.3) * 1.55 });
-      }
-    }
     function resize(){
       layoutDpr = window.devicePixelRatio || 1;
-      dpr = Math.min(1.5, Math.max(1, window.devicePixelRatio || 1));
-      canvas.width = Math.max(1, Math.floor(innerWidth * dpr));
-      canvas.height = Math.max(1, Math.floor(innerHeight * dpr));
-      canvas.style.width = innerWidth + 'px';
-      canvas.style.height = innerHeight + 'px';
-      ctx.setTransform(dpr,0,0,dpr,0,0);
       fitLyricText(true);
     }
     function measureLineWidth(fontSize) {
@@ -617,6 +575,7 @@
         state.fontWeight,
         state.letterSpacing,
         state.lineHeight,
+        state.highlightFollow,
         innerWidth,
         innerHeight,
         window.devicePixelRatio || 1
@@ -641,9 +600,8 @@
       var minSize = Math.max(24, Math.min(32, baseFontSize * .55));
       var maxScrollableWidth = readableWidth * 1.76;
       for (var i = 0; i < 24; i++) {
-        var width = measureLineWidth(size);
-        var height = lyricLayout.measure(size,state.fontWeight,state.letterSpacing,state.lineHeight).height;
-        if ((width <= maxScrollableWidth && height <= maxHeight) || size <= minSize) break;
+        var measured = lyricLayout.measure(size,state.fontWeight,state.letterSpacing,state.lineHeight);
+        if ((measured.width <= maxScrollableWidth && measured.height <= maxHeight) || size <= minSize) break;
         size = Math.max(minSize, size - Math.max(1.25, size * .062));
       }
       renderedFontSize = Math.round(size);
@@ -653,11 +611,10 @@
         fitScaleX = clamp(maxRenderedWidth / measuredWidth, .72, 1, 1);
       }
       setRootVar('--lyric-size', renderedFontSize + 'px');
-      setRootVar('--lyric-vertical-feather', Math.round(clamp(renderedFontSize * .92, 38, 72, 46)) + 'px');
       setRootVar('--lyric-letter-spacing', (renderedFontSize * state.letterSpacing).toFixed(2) + 'px');
       setRootVar('--lyric-fit-x', fitScaleX.toFixed(4));
-      lyricLayout.commit(renderedFontSize,state.fontWeight,state.letterSpacing,state.lineHeight);
-      setRootVar('--lyric-progress', (lyricLayout.pixelProgress(displayedProgress) * 100).toFixed(2) + '%');
+      if (state.highlightFollow) lyricLayout.commit(renderedFontSize,state.fontWeight,state.letterSpacing,state.lineHeight);
+      setHighlightProgress(displayedProgress);
       // Original inline-block/center layout and scaleX are retained. Measure
       // their zero-translation origin in layout coordinates, not moving stage
       // bounding rects: zero is not necessarily the readable sentence start.
@@ -671,6 +628,7 @@
       scrollState.width = line.offsetWidth * fitScaleX;
       scrollState.limit = Math.max(0, (scrollState.width - scrollState.clearWidth) / 2);
       scrollState.needed = scrollState.limit > .5;
+      lyricViewport.classList.toggle('scrolling', scrollState.needed);
       scrollState.start = scrollState.needed ? clearLeft - textLeft : 0;
       scrollState.end = scrollState.needed ? clearRight - textLeft - scrollState.width : 0;
       var maskEdgeWidth = scrollState.needed ? Math.min(edgeWidth, Math.round(clamp(edgeWidth * .44, 26, 58, 42))) : edgeWidth;
@@ -761,7 +719,7 @@
           document.fonts.add(loadedFace);
           if (state && state.fontFamily && state.fontFamily.indexOf(String(font.family)) !== -1) {
             fitLyricText(true);
-            drawFrame(performance.now(), true);
+            scheduleNextDraw();
           }
         }).catch(function(e){
           console.warn('[DesktopLyrics] custom font load failed', e);
@@ -770,25 +728,47 @@
         console.warn('[DesktopLyrics] custom font register failed', e);
       }
     }
+    var colorsApplied = false;
+    function applyColors(current, update) {
+      state.colors = update ? Object.assign({}, current, update) : current;
+      if (colorsApplied && (!update || Object.keys(update).every(function(key){
+        return state.colors[key] === current[key];
+      }))) return;
+      colorsApplied = true;
+      var primary = normalizeLyricColor(state.colors.primary, '#f6fdff');
+      var highlight = normalizeLyricColor(state.colors.highlight, '#fff0b8');
+      setRootVar('--lyric-primary', primary);
+      setRootVar('--lyric-secondary', normalizeLyricColor(state.colors.secondary, '#a8f6ff'));
+      setRootVar('--lyric-highlight', highlight);
+      setRootVar('--lyric-glow', normalizeLyricColor(state.colors.glow || state.colors.secondary, '#9cffdf'));
+      setRootVar('--lyric-shadow-soft', colorWithAlpha(primary, .36));
+      setRootVar('--lyric-shadow-glow', colorWithAlpha(primary, .28));
+    }
+    function setHighlightProgress(progress) {
+      var pixel = state.highlightFollow ? lyricLayout.pixelProgress(progress) : progress;
+      setRootVar('--lyric-progress', (pixel * 100).toFixed(2) + '%');
+    }
     function applyState(next){
       next = next || {};
+      var previous = state;
       var visibilityChanged = next.visibilityResetSerial != null && next.visibilityResetSerial !== state.visibilityResetSerial;
-      var fontChanged = fontConfigurationKey(Object.assign({},state,next)) !== fontConfigurationKey(state);
       var sentenceChanged = (next.lineKey != null && next.lineKey !== state.lineKey) ||
         (next.trackGeneration != null && next.trackGeneration !== state.trackGeneration);
-      var resetProgress = (next.progressResetSerial != null && next.progressResetSerial !== state.progressResetSerial) ||
+      state = Object.assign({}, previous, next);
+      var fontPayloadChanged = state.fontFamily !== previous.fontFamily || state.fontFamilies !== previous.fontFamilies ||
+        state.lyricLanguage !== previous.lyricLanguage || state.fontContextLanguage !== previous.fontContextLanguage;
+      var fontChanged = fontPayloadChanged && fontConfigurationKey(state) !== fontConfigurationKey(previous);
+      var resetProgress = (next.progressResetSerial != null && next.progressResetSerial !== previous.progressResetSerial) ||
         fontChanged ||
         visibilityChanged ||
-        (next.trackGeneration != null && next.trackGeneration !== state.trackGeneration) ||
-        (next.lineKey != null && next.lineKey !== state.lineKey) ||
-        (state.playing && next.playing === false);
-      state = Object.assign({}, state, next);
+        sentenceChanged ||
+        (previous.playing && !state.playing);
       if(visibilityChanged)line.classList.remove('in');
-      state.colors = Object.assign({}, state.colors, next.colors || {});
-      applyCustomFontPayload(next.customFont);
+      applyColors(previous.colors, next.colors);
+      if ('customFont' in next) applyCustomFontPayload(next.customFont);
       applyDesktopPlayback(next.playback);
       applyDesktopBeatMapPayload(next);
-      var motion = Object.assign({}, next.motion || {});
+      var motion = next.motion || {};
       if (motion.lyricGlow != null) state.lyricGlow = !!motion.lyricGlow;
       if (motion.lyricGlowBeat != null) state.lyricGlowBeat = !!motion.lyricGlowBeat;
       if (motion.lyricGlowStrength != null) state.lyricGlowStrength = motion.lyricGlowStrength;
@@ -796,7 +776,8 @@
       if (motion.beatGlow != null) state.beatGlow = motion.beatGlow;
       if (motion.beatPulse != null) state.beatPulse = motion.beatPulse;
       if (motion.bass != null) state.bass = motion.bass;
-      var text = String(state.text == null ? 'Mineradio' : state.text).replace(/\s+/g, ' ').trim();
+      var text = state.text === previous.text && lastText ? lastText :
+        String(state.text == null ? 'Mineradio' : state.text).replace(/\s+/g, ' ').trim();
       baseFontSize = Math.round(58 * clamp(state.size, .72, 1.55, 1));
       state.progress = clamp(state.progress, 0, 1, 0);
       state.scrollProgress = clamp(next.scrollProgress == null ? next.progress : next.scrollProgress, 0, 1, 0);
@@ -805,10 +786,7 @@
       state.scrollSpan = clamp(next.progressSpan, .75, 86400, 4.8);
       state.progressSpan = clamp(state.progressSpan, .75, 18, 4.8);
       state.progressReceivedAt = performance.now();
-      if (resetProgress) {
-        displayedProgress = state.progress;
-        setRootVar('--lyric-progress', (displayedProgress * 100).toFixed(2) + '%');
-      }
+      if (resetProgress || !state.playing) displayedProgress = state.progress;
       state.fontWeight = Math.round(clamp(state.fontWeight, 500, 900, 900) / 50) * 50;
       state.letterSpacing = clamp(state.letterSpacing, -.04, .18, 0);
       state.lineHeight = clamp(state.lineHeight, .86, 1.35, 1);
@@ -819,36 +797,26 @@
       state.beatPulse = clamp(state.beatPulse, 0, 1.4, 0);
       state.bass = clamp(state.bass, 0, 1.2, 0);
       state.feather = clamp(state.feather || (next && next.feather), .030, .075, .055);
-      state.displayColors = {
-        primary: normalizeLyricColor(state.colors.primary || '#f6fdff', '#f6fdff'),
-        secondary: normalizeLyricColor(state.colors.secondary || '#a8f6ff', '#a8f6ff'),
-        highlight: normalizeLyricColor(state.colors.highlight || '#fff0b8', '#fff0b8'),
-        glow: normalizeLyricColor(state.colors.glow || state.colors.secondary || '#9cffdf', '#9cffdf')
-      };
-      setRootVar('--lyric-primary', state.displayColors.primary);
-      setRootVar('--lyric-secondary', state.displayColors.secondary);
-      setRootVar('--lyric-highlight', state.displayColors.highlight);
-      setRootVar('--lyric-glow', state.displayColors.glow);
-      setRootVar('--lyric-shadow-soft', colorWithAlpha(state.displayColors.primary, .36));
-      setRootVar('--lyric-shadow-glow', colorWithAlpha(state.displayColors.primary, .28));
-      setRootVar('--lyric-shadow-hot', colorWithAlpha(state.displayColors.highlight, .28));
-      setRootVar('--lyric-edge', 'rgba(4,6,12,.42)');
-      setRootVar('--lyric-drop', colorWithAlpha(state.displayColors.primary, .26));
-      setRootVar('--lyric-drop-paused', colorWithAlpha(state.displayColors.primary, .18));
       setRootVar('--lyric-font', state.fontFamily || 'Inter,"Noto Sans SC","PingFang SC","Microsoft YaHei",Arial,sans-serif');
       setRootVar('--lyric-weight', String(state.fontWeight));
       setRootVar('--lyric-line-height', String(state.lineHeight));
       setRootVar('--lyric-feather', (state.feather * 100).toFixed(2) + '%');
-      document.body.classList.toggle('show', !!state.enabled);
-      document.body.classList.toggle('paused', !state.playing);
-      document.body.classList.toggle('highlight', state.highlightFollow === true);
-      document.body.style.opacity = state.enabled ? String(clamp(state.opacity, .28, 1, .92)) : '0';
-      syncLockClasses();
-      if (!state.enabled) {
+      if (lastText === '' || state.enabled !== previous.enabled || state.opacity !== previous.opacity) {
+        document.body.classList.toggle('show', !!state.enabled);
+        document.body.style.opacity = state.enabled ? String(clamp(state.opacity, .28, 1, .92)) : '0';
+      }
+      if (lastText === '' || state.playing !== previous.playing) document.body.classList.toggle('paused', !state.playing);
+      if (state.playing !== previous.playing || state.enabled !== previous.enabled)
+        document.body.classList.toggle('moving', state.playing && state.enabled);
+      if (state.highlightFollow !== previous.highlightFollow)
+        document.body.classList.toggle('highlight', state.highlightFollow === true);
+      if (lastText === '' || state.clickThrough !== previous.clickThrough) syncLockClasses();
+      if (!state.enabled && previous.enabled) {
         hideInteractionHint();
         setPointerCapture(false);
       }
-      if (sentenceChanged || text !== lastText) {
+      var textChanged = text !== lastText;
+      if (sentenceChanged || textChanged) {
         lastText = text;
         progressText = text;
         displayedProgress = state.progress;
@@ -858,10 +826,22 @@
         layoutKey = '';
         if(!visibilityChanged)replayLineAnimation();
       }
-      if(lyricLayout.update(text,typographyOptions(state)))layoutKey='';
-      fitLyricText(visibilityChanged);
-      // Also applies while paused or hidden, before the visibility-ready ACK.
-      updateLyricScroll(performance.now(), resetProgress ? state.progress : displayedProgress);
+      if ((fontChanged || textChanged) && lyricLayout.update(text,typographyOptions(state))) layoutKey='';
+      var styleChanged = state.size !== previous.size || state.fontWeight !== previous.fontWeight ||
+        state.letterSpacing !== previous.letterSpacing || state.lineHeight !== previous.lineHeight ||
+        state.highlightFollow !== previous.highlightFollow;
+      if (fontChanged || textChanged || sentenceChanged || styleChanged || visibilityChanged) fitLyricText(visibilityChanged);
+      // Apply the sampled position before acknowledging a newly shown view.
+      if (resetProgress || !state.playing || textChanged || styleChanged) {
+        setHighlightProgress(displayedProgress);
+        updateLyricScroll(performance.now(), displayedProgress);
+      }
+      if ((previous.playing && !state.playing) || (!state.enabled && previous.enabled)) {
+        live = {solar:0,beat:0,bass:0,scale:1,lift:0};
+        stage.style.removeProperty('transform');
+        setRootVar('--lyric-css-beat-glow', '0px');
+      }
+      scheduleNextDraw();
     }
     function currentDisplayProgress() {
       var target = clamp(state.progress, 0, 1, 0);
@@ -883,16 +863,6 @@
       displayedProgress = clamp(displayedProgress + delta * ease, 0, 1, displayedProgress);
       return displayedProgress;
     }
-    function currentRawProgress() {
-      var target = clamp(state.progress, 0, 1, 0);
-      if (state.playing && state.progressSpan > 0 && state.progressMode !== 'word') {
-        target += Math.max(0, performance.now() - (state.progressReceivedAt || performance.now())) / (state.progressSpan * 1000);
-      }
-      return clamp(target, 0, 1, target);
-    }
-    function drawCanvasText(text, x, y, fontSize, spacing, stroke) {
-      lyricLayout.paint(ctx,x,y,stroke);
-    }
     function updateMotion(now, offline) {
       var glowStrength = state.lyricGlow ? state.lyricGlowStrength : 0;
       var glowDrive = Math.min(1.7, Math.max(0, glowStrength / .50));
@@ -912,147 +882,29 @@
       live.solar += (solarTarget - live.solar) * (solarTarget > live.solar ? .36 : .10);
       live.beat += (beatTarget - live.beat) * (beatTarget > live.beat ? .62 : .18);
       live.bass += (bassDrive - live.bass) * .22;
-      return { glowStrength:glowStrength, glowDrive:glowDrive };
     }
-    function applyStageMotion(now) {
+    function applyStageMotion(now, drawEffect) {
       var cinemaBinding = state.cinema !== false;
       var motionBeat = cinemaBinding ? live.beat : 0;
       var motionSolar = cinemaBinding ? live.solar : 0;
       var motionBass = cinemaBinding ? live.bass : 0;
       var targetLift = cinemaBinding ? Math.min(22, motionBeat * 18 + motionSolar * 5.2 + motionBass * 4.4) : 0;
       live.lift += (targetLift - live.lift) * (targetLift > live.lift ? .46 : .16);
+      var scale = 1 + motionBeat * .115 + motionSolar * .034 + motionBass * .026;
+      live.scale += (scale - live.scale) * (scale > live.scale ? .46 : .16);
+      if (!drawEffect) return;
       var floatY = Math.sin(now * 1.08) * -9.8 + Math.sin(now * 2.10 + .7) * 3.1;
       var floatX = Math.sin(now * .70 + .4) * 6.2 + Math.sin(now * 1.18 + 1.1) * 2.6;
       var bobY = floatY - live.lift;
       var bobX = floatX + Math.sin(now * 1.55) * motionBeat * 3.4;
       var rotX = Math.sin(now * .86 + .2) * 3.25 - motionBeat * .92;
       var rotY = Math.sin(now * .74 + 1.3) * -2.75 + motionBeat * .34;
-      var scale = 1 + motionBeat * .115 + motionSolar * .034 + motionBass * .026;
-      live.scale += (scale - live.scale) * (scale > live.scale ? .46 : .16);
       stage.style.transform = 'translate3d(' + bobX.toFixed(2) + 'px,' + bobY.toFixed(2) + 'px,0) rotateX(' + rotX.toFixed(3) + 'deg) rotateY(' + rotY.toFixed(3) + 'deg) scale(' + live.scale.toFixed(4) + ')';
-      stage.style.filter = 'brightness(' + (1.04 + motionBeat * .12 + motionSolar * .05).toFixed(3) + ') saturate(' + (1.08 + motionBeat * .10).toFixed(3) + ')';
-      setRootVar('--lyric-css-beat-glow', (state.lyricGlow ? clamp(motionBeat * 8 + motionSolar * 3, 0, 12, 0) : 0).toFixed(2) + 'px');
-    }
-    function drawAura(rect, motion) {
-      if (!state.lyricGlow || motion.glowStrength <= 0) return;
-      var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height * .52;
-      var rx = Math.max(rect.width * .58, innerWidth * .16, 260) * (1 + live.solar * .10 + live.beat * .08);
-      var ry = Math.max(rect.height * 1.02, 66) * (1 + live.solar * .10 + live.beat * .08);
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = clamp(state.opacity, .28, 1, .92);
-      ctx.translate(cx, cy);
-      ctx.scale(rx, ry);
-      var g = ctx.createRadialGradient(0,0,0,0,0,1);
-      g.addColorStop(0.00, colorWithAlpha(state.displayColors.highlight, .24));
-      g.addColorStop(0.28, colorWithAlpha(state.displayColors.glow, .15));
-      g.addColorStop(0.64, colorWithAlpha(state.displayColors.secondary, .040));
-      g.addColorStop(0.90, colorWithAlpha(state.displayColors.glow, .006));
-      g.addColorStop(1.00, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0,0,1,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-    function drawHighlightBloom(rect, progress) {
-      if (!state.lyricGlow || state.highlightFollow !== true) return;
-      var p = lyricLayout.pixelProgress(clamp(progress, 0, 1, 0));
-      var x = rect.left + rect.width * p;
-      var y = rect.top + rect.height * .50 - live.lift * .10;
-      var rx = Math.max(42, Math.min(150, renderedFontSize * (1.05 + live.beat * .32)));
-      var ry = Math.max(24, Math.min(82, renderedFontSize * (.42 + live.beat * .18)));
-      var alpha = clamp(.18 + live.solar * .12 + live.beat * .18, .12, .48) * clamp(state.opacity, .28, 1, .92);
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = alpha;
-      ctx.translate(x, y);
-      ctx.scale(rx, ry);
-      var g = ctx.createRadialGradient(0,0,0,0,0,1);
-      g.addColorStop(0, colorWithAlpha(state.displayColors.highlight, .88));
-      g.addColorStop(.36, colorWithAlpha(state.displayColors.glow, .34));
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0,0,1,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-    function drawGlowText(rect, motion) {
-      if (!state.lyricGlow || motion.glowStrength <= 0) return;
-      var target = Math.min(1.08, (0.09 + live.solar * .38 + live.beat * .22) * Math.min(3, motion.glowDrive));
-      live.glow += (target - live.glow) * (target > live.glow ? .11 : .06);
-      if (live.glow <= .004) return;
-      var text = line.textContent || 'Mineradio';
-      var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height / 2;
-      var spacing = renderedFontSize * state.letterSpacing;
-      var hotMix = Math.max(0, Math.min(1, live.solar * 1.05 + live.beat * .18));
-      var color = hotMix > .42 ? state.displayColors.highlight : state.displayColors.glow;
-      var layers = [
-        { blur:10, alpha:.54, stroke:Math.max(9, renderedFontSize * .09) },
-        { blur:24, alpha:.38, stroke:Math.max(15, renderedFontSize * .15) },
-        { blur:48, alpha:.20, stroke:Math.max(22, renderedFontSize * .22) },
-        { blur:78, alpha:.09, stroke:Math.max(30, renderedFontSize * .30) }
-      ];
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // drawCanvasText paints the same measured font runs as the DOM line.
-      ctx.translate(cx, cy);
-      ctx.scale(fitScaleX * live.scale, live.scale);
-      for (var i = 0; i < layers.length; i++) {
-        ctx.save();
-        ctx.filter = 'blur(' + layers[i].blur + 'px)';
-        ctx.globalAlpha = live.glow * layers[i].alpha * clamp(state.opacity, .28, 1, .92);
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = layers[i].stroke;
-        ctx.lineJoin = 'round';
-        drawCanvasText(text, 0, 0, renderedFontSize, spacing, true);
-        drawCanvasText(text, 0, 0, renderedFontSize, spacing, false);
-        ctx.restore();
-      }
-      ctx.restore();
-    }
-    function drawParticles(rect, motion, now) {
-      var target = state.lyricGlow && state.lyricGlowParticles ? Math.min(.50, (.12 + live.solar * .18 + live.beat * .16) * Math.min(1.7, motion.glowDrive)) : 0;
-      live.spark += (target - live.spark) * (target > live.spark ? .14 : .08);
-      if (live.spark <= .006) return;
-      ensureParticles();
-      var width = Math.max(300, Math.min(innerWidth - 48, rect.width * 1.16 + 140));
-      var height = Math.max(74, rect.height * 1.34);
-      var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height / 2 + Math.sin(now * .55) * 3.5;
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      for (var i=0;i<particles.length;i++) {
-        var p = particles[i];
-        var lane = Math.floor(p.lane * 5);
-        var local = (p.lane * 5) % 1;
-        var speed = .018 + rand(p.seed) * .030 + lane * .002;
-        var flow = (p.phase + now * speed) % 1;
-        var edge = Math.sin(Math.PI * flow);
-        var x = cx + (flow - .5) * width * (1.02 + rand(p.seed * 4.1) * .18);
-        var curve = Math.sin(flow * Math.PI * 2 * (.9 + rand(p.seed * 1.3) * .5) + p.seed + now * .32);
-        var y = cy + (lane - 2) * height * .13 + curve * height * (.16 + rand(p.seed * 2.2) * .18) + (local - .5) * height * .13 + Math.sin(now * (.42 + rand(p.seed) * .32) + p.seed) * (4 + live.beat * 6);
-        var tw = Math.pow(.5 + .5 * Math.sin(now * (.7 + rand(p.seed) * .4) + p.seed), 4);
-        var r = Math.max(.7, p.size * (.75 + edge * 1.45 + tw * .85 + live.beat * .55));
-        var grad = ctx.createRadialGradient(x,y,0,x,y,r*4.5);
-        grad.addColorStop(0, colorWithAlpha(state.displayColors.highlight, .96));
-        grad.addColorStop(.34, colorWithAlpha(state.displayColors.glow, .68));
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.globalAlpha = live.spark * (0.16 + edge * .44 + tw * .24) * clamp(state.opacity, .28, 1, .92);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(x,y,r*4.5,0,Math.PI*2);
-        ctx.fill();
-      }
-      ctx.restore();
+      var glow = state.lyricGlow ? clamp(motionBeat * 8 + motionSolar * 3, 0, 12, 0) : 0;
+      setRootVar('--lyric-css-beat-glow', Math.round(glow) + 'px');
     }
     var observationAt = 0, observedFrames = [], observationPrevious = 0, nextDrawAt = 0, observationReset = null, observationVisibility = null;
+    var frameRequest = 0, frameTimer = 0, effectAt = 0;
     function observeDisplay(nowMs) {
       if (!state.diagnostic || !window.desktopOverlay || !window.desktopOverlay.reportDisplay) return;
       if (observationPrevious) observedFrames.push(nowMs - observationPrevious);
@@ -1074,39 +926,50 @@
       });
       observationAt = nowMs; observationReset = d.reset; observationVisibility = state.visibilityResetSerial; observedFrames = [];
     }
+    function shouldDraw() {
+      return state.enabled && (state.playing || state.diagnostic) && !document.hidden;
+    }
     function draw(nowMs){
+      frameRequest = 0;
+      if (!shouldDraw()) return;
       if ((window.devicePixelRatio || 1) !== layoutDpr) resize();
-      if (state.enabled) {
-        var interval = frameIntervalMs();
-        if (interval > 0 && nextDrawAt && nowMs + .8 < nextDrawAt) {
-          scheduleNextDraw();
-          return;
-        }
-        // Keep a target cadence instead of restarting the deadline on every
-        // frame. At a 64Hz guest refresh, restarting turns 30fps into ~21fps.
-        if (!nextDrawAt || nowMs - nextDrawAt > interval * 3) nextDrawAt = nowMs;
-        nextDrawAt += interval;
+      var interval = frameIntervalMs();
+      if (interval > 0 && nextDrawAt && nowMs + .8 < nextDrawAt) {
+        scheduleNextDraw();
+        return;
       }
+      // Keep a target cadence independent of the display's refresh rate.
+      if (!nextDrawAt || nowMs - nextDrawAt > interval * 3) nextDrawAt = nowMs;
+      nextDrawAt += interval;
       var dt = lastDrawAt ? Math.min(.12, Math.max(.001, (nowMs - lastDrawAt) / 1000)) : 1 / 60;
       lastDrawAt = nowMs;
-      var now = nowMs * .001;
-      if (state.enabled) {
-        var progress = currentDisplayProgress();
-        setRootVar('--lyric-progress', (lyricLayout.pixelProgress(progress) * 100).toFixed(2) + '%');
-        var offlineMotion = tickDesktopBeatMap(currentDesktopPlaybackTime(nowMs), dt);
-        var motion = updateMotion(now, offlineMotion);
-        applyStageMotion(now);
+      if (state.playing) {
+        var now = nowMs * .001;
+        var progress = state.highlightFollow ? currentDisplayProgress() : 0;
+        if (state.highlightFollow) setHighlightProgress(progress);
+        var drawEffect = nowMs >= effectAt;
+        if (drawEffect) effectAt = nowMs + 64;
+        updateMotion(now, tickDesktopBeatMap(currentDesktopPlaybackTime(nowMs), dt));
+        applyStageMotion(now, drawEffect);
         updateLyricScroll(nowMs, progress);
-        observeDisplay(nowMs);
       }
+      observeDisplay(nowMs);
       scheduleNextDraw();
     }
     function scheduleNextDraw() {
-      if (!state.enabled) {
-        setTimeout(function(){ requestAnimationFrame(draw); }, 250);
+      if (!shouldDraw()) {
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        if (frameTimer) clearTimeout(frameTimer);
+        frameRequest = frameTimer = lastDrawAt = nextDrawAt = effectAt = observationPrevious = 0;
         return;
       }
-      requestAnimationFrame(draw);
+      if (frameRequest || frameTimer) return;
+      var delay = nextDrawAt - performance.now() - 4;
+      if (delay <= 0) frameRequest = requestAnimationFrame(draw);
+      else frameTimer = setTimeout(function(){
+        frameTimer = 0;
+        frameRequest = requestAnimationFrame(draw);
+      }, delay);
     }
     function normalizeFrameRate(value) {
       var n = Number(value);
@@ -1289,6 +1152,7 @@
       applyState(data.payload || {});
     });
     window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', scheduleNextDraw);
     if (typeof ResizeObserver === 'function') {
       var layoutRefreshPending = false;
       var lyricLayoutObserver = new ResizeObserver(function(){
@@ -1320,7 +1184,7 @@
         }
       });
     }
-    requestAnimationFrame(draw);
+    scheduleNextDraw();
   </script>
 </body>
 </html>

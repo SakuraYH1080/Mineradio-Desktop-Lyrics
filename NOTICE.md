@@ -16,7 +16,8 @@ Reference projects inspected, not bundled:
 https://github.com/Widdit/now-playing-service at c6cfc33997ca5b63fe64975ca3037acc72ae7366
 https://github.com/apoint123/inflink-rs at acbaa505f61395b90c71db186f8cc2e9de0a7934
 
-Electron is distributed under its own license, available in node_modules/electron/LICENSE.
+Electron is used by the development entry points. Its license is available in node_modules/electron/LICENSE.
+The Windows candidate includes Node.js and the WebView2 Loader with their licenses in the installed licenses directory.
 
 Phase two adds an independently implemented BetterNCM read-only bridge consuming
 the documented InfLink-rs 3.4.0 API. Pinned reference revisions:

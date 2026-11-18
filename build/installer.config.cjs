@@ -6,21 +6,23 @@ module.exports = {
   productName: identity.productName,
   executableName: identity.win.executableName,
   copyright: 'GPL-3.0-only; upstream Mineradio authors and contributors',
-  electronVersion: '42.4.1',
+  // The NSIS target consumes the native prepackaged folder. This value
+  // satisfies electron-builder's framework metadata lookup at build time.
+  electronVersion: require('../package.json').devDependencies.electron,
   asar: false,
   npmRebuild: false,
   buildDependenciesFromSource: false,
-  compression: 'normal',
+  compression: 'maximum',
   forceCodeSigning: false,
   publish: null,
-  directories: {buildResources:'build', output:'artifacts/1.0.0'},
+  directories: {buildResources:'build'},
   artifactName: 'Mineradio-Desktop-Lyrics-${version}-${arch}-Setup.${ext}',
   win: {
     ...identity.win,
     icon: path.resolve(__dirname, '..', identity.win.icon),
     target: [{target:'nsis', arch:['x64']}],
-    // The controlled build wrapper edits the copied EXE's metadata and icon.
-    // No certificate is configured for this candidate.
+    // The native linker has already embedded the launcher's metadata and icon.
+    // Local builds use this config. The signed build supplies the NSIS signing hook.
     signAndEditExecutable: false,
     signExecutable: false,
     requestedExecutionLevel: 'asInvoker',
@@ -30,6 +32,7 @@ module.exports = {
     oneClick: false,
     perMachine: false,
     allowElevation: false,
+    packElevateHelper: false,
     allowToChangeInstallationDirectory: true,
     runAfterFinish: false,
     createDesktopShortcut: 'always',

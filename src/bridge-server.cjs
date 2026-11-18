@@ -19,6 +19,24 @@ async function startBridge({
     connected = false,
     windowAt = 0,
     count = 0;
+  let watchdog;
+  function expire() {
+    const time = now();
+    const remaining = lastAt + staleMs - time;
+    if (remaining >= 0) {
+      watchdog = setTimeout(expire, remaining + 1).unref();
+      return;
+    }
+    watchdog = undefined;
+    connected = false;
+    onSample({
+      source: "inflink-api",
+      sessionId: `inflink:${runId}:${owner}`,
+      connected: false,
+      sampledAtMs: time,
+    });
+    onEvent({ type: "bridge-timeout" });
+  }
   const cursors = new Map();
   const origins = new Set(["orpheus://orpheus", "null"]);
   const server = http.createServer(async (req, res) => {
@@ -105,6 +123,8 @@ async function startBridge({
       owner = frame.instance;
       lastAt = now();
       connected = sample.connected;
+      clearTimeout(watchdog);
+      watchdog = connected ? setTimeout(expire, staleMs + 1).unref() : undefined;
       onSample(sample);
       onEvent({
         type: "bridge-accepted",
@@ -137,22 +157,10 @@ async function startBridge({
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, JSON.stringify(config), { mode: 0o600 });
   }
-  const watchdog = setInterval(() => {
-    if (connected && now() - lastAt > staleMs) {
-      connected = false;
-      onSample({
-        source: "inflink-api",
-        sessionId: `inflink:${runId}:${owner}`,
-        connected: false,
-        sampledAtMs: now(),
-      });
-      onEvent({ type: "bridge-timeout" });
-    }
-  }, 100);
   return {
     config,
     async close() {
-      clearInterval(watchdog);
+      clearTimeout(watchdog);
       if (connected)
         onSample({
           source: "inflink-api",

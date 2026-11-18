@@ -1,3 +1,5 @@
+const nativeDesktop = !process.versions.electron;
+const desktop = nativeDesktop ? require("./webview-host.cjs") : require("electron");
 const {
   app,
   BrowserWindow,
@@ -8,7 +10,8 @@ const {
   Tray,
   nativeImage,
   dialog,
-} = require("electron");
+  shell,
+} = desktop;
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -25,8 +28,10 @@ const desktopStartup = require('./desktop-startup.cjs');
 const windowPlacement = require('./window-state.cjs');
 const root = path.join(__dirname, "..");
 const appIdentity = require('../build/windows-app.json');
-app.setName(appIdentity.productName);
-if(process.platform === 'win32')app.setAppUserModelId(appIdentity.appId);
+if (!nativeDesktop) {
+  app.setName(appIdentity.productName);
+  if (process.platform === 'win32') app.setAppUserModelId(appIdentity.appId);
+}
 const appIconPath = path.join(root, process.platform === 'win32' ? appIdentity.win.icon : appIdentity.extraMetadata.mineradioIcons.png);
 const trayIconPath = path.join(root, process.platform === 'win32' ? appIdentity.extraMetadata.mineradioIcons.trayWindows : appIdentity.extraMetadata.mineradioIcons.trayPng);
 const demo = process.argv.includes("--demo");
@@ -71,12 +76,16 @@ const runtimeDataPath = path.join(
 );
 fs.mkdirSync(runtimeDataPath,{recursive:true});
 app.setPath('userData',runtimeDataPath);
-if (!demo && !process.argv.includes("--bridge-qa") && !app.requestSingleInstanceLock()) app.exit(0);
+if (!nativeDesktop && !demo && !process.argv.includes("--bridge-qa") && !app.requestSingleInstanceLock()) app.exit(0);
 let win, probe, poller, timer, metrics, tray;
 let settingsWindow;
+let overlayOpening, overlayRelease;
+let renderDue = Infinity;
+const hiddenRetentionMs = 5000;
+const frameDelay = 33;
 let visibility, visibilityRegistered=false;
 const visibilityWaiters=new Map();
-app.on('second-instance',()=>{if(visibility)void visibility.set(true,'launch').catch(e=>record({type:'visibility-error',error:e.message}));});
+app.on('second-instance',()=>{if(visibility && !visibility.visible)void visibility.set(true,'launch').catch(e=>record({type:'visibility-error',error:e.message}));});
 const legacySettingsPath = path.join(app.getPath('userData'), 'lyrics-settings.json');
 const settingsPath = demo || capture ? legacySettingsPath : path.join(app.getPath('appData'), 'MineradioExternalLyrics', 'lyrics-settings.json');
 const placementPath=path.join(app.getPath('appData'),'MineradioExternalLyrics','window-state.json');
@@ -88,13 +97,18 @@ let lyricFontFamily=lyricFontFamilies.default;
 let languageValue=null, languageContext='auto';
 function refreshFontProfile(){lyricFontFamilies=systemFonts.fontProfile(settings);lyricFontFamily=lyricFontFamilies.default;}
 let hot = null,
-  pointer = false,
   locked = typeof savedPlacement.locked==='boolean'?savedPlacement.locked:true;
 let lastMiddle = 0;
 let wire = {};
+let sentWire;
+const staticPresentationKeys = [
+  'enabled', 'opacity', 'size', 'cinema', 'frameRate', 'colors', 'fontFamily', 'fontFamilies',
+  'lyricLanguage', 'fontContextLanguage', 'clickThrough', 'text',
+  'lineKey', 'trackGeneration', 'highlightFollow', 'allowSyntheticBeat',
+  'progressResetSerial', 'visibilityResetSerial', 'beatMap', 'beatMapKey',
+];
 let buffer = "";
 let localKey = null;
-let dragResidual = { x: 0, y: 0 };
 let overlayDimensions;
 let dragAnchor=null;
 let appliedIgnore=null;
@@ -106,17 +120,24 @@ function savePlacement(){
   catch(error){record({type:'window-placement-save-error',error:error.message});}
 }
 function rememberPlacement(){
-  if(!keepPlacement || !win || win.isDestroyed())return;
-  placementBounds=win.getBounds();clearTimeout(placementTimer);
+  if(!keepPlacement)return;
+  if(win && !win.isDestroyed())placementBounds=win.getBounds();
+  if(!placementBounds)return;
+  clearTimeout(placementTimer);
   placementTimer=setTimeout(savePlacement,250);
 }
 fs.mkdirSync(runDir, { recursive: true });
-const log = fs.createWriteStream(
-  path.join(runDir, `overlay-${demo ? "demo" : "live"}-${Date.now()}.ndjson`),
-);
+const auditLog = !nativeDesktop || demo || diagnostics || process.argv.includes("--live-audit");
+const logName = auditLog ? 'overlay-' + (demo ? 'demo' : 'live') + '-' + Date.now() + '.ndjson' : 'desktop.ndjson';
+const log = fs.createWriteStream(path.join(runDir, logName));
+let logBytes = 0;
 function record(v) {
-  log.write(
-    JSON.stringify({
+  if (log.writableEnded) return;
+  if (!auditLog && (
+    logBytes >= 1024 * 1024 || v.type === 'bridge-accepted' || v.type === 'bridge-rejected' ||
+    v.type === 'metrics' || (v.type === 'source' && !v.events.length)
+  )) return;
+  const line = JSON.stringify({
       atMs: Date.now(),
       provenance: demo
         ? "fixture"
@@ -124,15 +145,16 @@ function record(v) {
           ? "authenticated-protocol-replay-not-real-client"
           : "live-source",
       ...v,
-    }) + "\n",
-  );
+    }) + "\n";
+  logBytes += Buffer.byteLength(line);
+  log.write(line);
 }
 const timeline = new Timeline({ allowedSource: source });
-const palette = new CoverPalette({record,decode:bytes=>{
+const palette = new CoverPalette({record,decode: desktop.decodeCover || (bytes=>{
   const image=nativeImage.createFromBuffer(bytes);
   if(image.isEmpty()) throw Error('Invalid cover image');
   return image.resize({width:64,height:64,quality:'good'}).toBitmap();
-}});
+})});
 let bridge = null;
 const bindingsPath = path.join(root, "lyrics-bindings.json");
 const bindings = fs.existsSync(bindingsPath)
@@ -170,8 +192,36 @@ const lyrics = new Lyrics(async (track, duration) => {
   return online(binding?.id ? { ...track, id: binding.id } : track, duration);
 });
 function send() {
-  if (win && !win.isDestroyed() && (!visibility || visibility.visible))
-    win.webContents.send("mineradio-desktop-lyrics-state", wire);
+  if (!win || win.isDestroyed() || !visibility?.visible) return;
+  let payload = wire;
+  if (nativeDesktop && sentWire) {
+    payload = { ...wire };
+    for (const key of staticPresentationKeys)
+      if (wire[key] === sentWire[key]) delete payload[key];
+  }
+  win.webContents.send("mineradio-desktop-lyrics-state", payload);
+  if (nativeDesktop) sentWire = wire;
+}
+function stopRenderTimer() {
+  clearTimeout(timer);
+  timer = null;
+  renderDue = Infinity;
+}
+function requestRender(delay = 0) {
+  if (!nativeDesktop || !win?.loaded || !visibility.visible || app.isQuitting) return;
+  const due = performance.now() + delay;
+  if (due >= renderDue) return;
+  clearTimeout(timer);
+  renderDue = due;
+  timer = setTimeout(() => {
+    timer = null;
+    renderDue = Infinity;
+    tick();
+  }, delay);
+}
+function refreshPresentation() {
+  if (nativeDesktop) requestRender();
+  else tick();
 }
 function mouse() {
   if (win && !win.isDestroyed() && appliedIgnore!==locked) {
@@ -184,18 +234,19 @@ function mouse() {
 function setLock(value) {
   locked = value;
   if(locked)dragAnchor=null;
-  pointer = !locked;
-  wire.clickThrough = locked;
   mouse();
-  send();
+  refreshPresentation();
   refreshTray();
   rememberPlacement();
   record({ type: "lock", locked });
 }
 function receive(s) {
+  const previous = nativeDesktop ? timeline.snapshot() : null;
   const events = timeline.accept(s);
   record({ type: "source", sample: s, events });
   const state = timeline.snapshot();
+  if (nativeDesktop && (events.length || previous.connected !== state.connected ||
+    previous.usable !== state.usable || (!state.playing && previous.position !== state.position))) requestRender();
   if (state.track) {
     const key = trackKey(state.track);
     // Negative results can expire, but source heartbeats never drive a retry loop.
@@ -206,9 +257,10 @@ function receive(s) {
       key !== lyrics.key || (!lyrics.inFlight && !(lyrics.duration > 0) && state.duration > 0) || retryExpired;
     const requestedGeneration = state.key;
     const pending = lyrics.change(state.track, state.duration, false, retryExpired);
-    if (fetchNeeded)
+    if (fetchNeeded) {
+      requestRender();
       void pending.then(() => {
-        if (timeline.snapshot().key === requestedGeneration)
+        if (timeline.snapshot().key === requestedGeneration) {
           record({
             type: "lyrics-ready",
             trackId: state.track.id,
@@ -223,13 +275,22 @@ function receive(s) {
             lineCount: lyrics.value.lines?.length || 0,
             error: lyrics.value.error,
           });
+          requestRender();
+        }
       });
+    }
   }
 }
+let paletteTrack, paletteSettings;
 function tick() {
-  moveDragWindow();
+  if (nativeDesktop && (!visibility.visible || !win?.loaded)) return;
+  if (!nativeDesktop) moveDragWindow();
   const s = timeline.snapshot();
-  void palette.change(s.track, settings);
+  if (paletteTrack !== s.track?.id || paletteSettings !== settings) {
+    paletteTrack = s.track?.id;
+    paletteSettings = settings;
+    void palette.change(s.track, settings).then(() => requestRender());
+  }
   if(languageValue!==lyrics.value){languageValue=lyrics.value;languageContext=typography.contextLanguage(lyrics.value.lines || []);}
   const located = s.usable ? locate(lyrics.value, s.position) : null;
   const statusCaption = preferences.presentation(s, lyrics.value, settings, located);
@@ -245,19 +306,19 @@ function tick() {
         progress: 0,
         highlightFollow: false,
       };
+  const colors = palette.current();
   wire = {
     enabled: !statusCaption || !!statusCaption.text,
     opacity: 0.96,
     size: 1,
     cinema: true,
     frameRate,
-    colors: palette.current(),
+    colors,
     fontFamily: lyricFontFamily,
     fontFamilies: lyricFontFamilies,
     lyricLanguage: settings.lyricLanguage,
     fontContextLanguage: statusCaption ? 'auto' : languageContext,
     clickThrough: locked,
-    lyricGlowParticles: true,
     ...lyric,
     progressResetSerial: s.resetSerial,
     visibilityResetSerial: visibility?.serial || 0,
@@ -281,10 +342,15 @@ function tick() {
       sentAtMs: timeline.sample?.sentAtMs,
       trace: timeline.sample?.trace,
       expectedText: lyric.text, expectedProgress: lyric.progress,
-      captionKind: statusCaption?.kind || 'lyrics', colors: palette.current(),
+      captionKind: statusCaption?.kind || 'lyrics', colors,
     } : undefined,
   };
   send();
+  if (nativeDesktop) {
+    const delay = diagnostics || s.playing || palette.transitioning() ? frameDelay :
+      Math.max(1, Math.ceil(timeline.presentationDeadline(s) - performance.now()) + 1);
+    requestRender(delay);
+  }
 }
 function attachProbe() {
   probe = spawn(
@@ -320,6 +386,7 @@ function attachProbe() {
   probe.on("exit", (code) => {
     record({ type: "probe-exit", code });
     timeline.reset();
+    requestRender();
     if (!app.isQuitting) setTimeout(attachProbe, 2000);
   });
 }
@@ -385,9 +452,12 @@ function openSettings(){
   if(settingsWindow&&!settingsWindow.isDestroyed()){settingsWindow.show();settingsWindow.focus();return}
   const area=screen.getPrimaryDisplay().workArea;
   settingsWindow=new BrowserWindow({width:Math.min(980,area.width-40),height:Math.min(870,area.height-40),minWidth:420,minHeight:560,title:'Mineradio · 歌词设置',icon:appIconPath,autoHideMenuBar:true,backgroundColor:'#F8F5F2',webPreferences:{preload:path.join(root,'src/settings-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
-  settingsWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  settingsWindow.webContents.on('will-navigate',e=>e.preventDefault());
-  settingsWindow.loadFile(path.join(root,'public/settings.html'));
+  if (!nativeDesktop) {
+    settingsWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+    settingsWindow.webContents.on('will-navigate',e=>e.preventDefault());
+  }
+  void settingsWindow.loadFile(path.join(root,'public/settings.html')).catch(error =>
+    record({type:'settings-window-error',error:error.message}));
   settingsWindow.on('closed',()=>{settingsWindow=null;});
 }
 function refreshTray(){
@@ -398,7 +468,12 @@ function refreshTray(){
     {label:locked?'解锁拖动（Ctrl+Alt+L）':'锁定并穿透（Ctrl+Alt+L）',click:()=>setLock(!locked)},
     {label:'歌词设置',click:openSettings},
     ...(desktopConfig?[{label:'网易云连接设置',click:()=>{app.relaunch({args:[...process.argv.slice(1).filter(value=>value!=='--configure-connection'),'--configure-connection']});app.quit();}}]:[]),
-    {label:'重试当前歌词',click:()=>{const s=timeline.snapshot();if(s.track)void lyrics.change(s.track,s.duration,true);}},
+    {label:'重试当前歌词',click:()=>{
+      const s=timeline.snapshot();
+      if (!s.track) return;
+      void lyrics.change(s.track,s.duration,true).then(refreshPresentation);
+      refreshPresentation();
+    }},
     {label:'退出',click:()=>app.quit()}
   ]));
 }
@@ -409,7 +484,7 @@ ipcMain.on('mineradio-visibility-ready',(event,serial,observed)=>{
 });
 function settingsSender(event){if(event.sender!==settingsWindow?.webContents)throw Error('Settings window required')}
 ipcMain.handle('mineradio-settings-read',event=>{settingsSender(event);const state=timeline.snapshot();return {settings,defaults:preferences.defaults,colors:palette.current(),track:state.track,connection:{connected:state.connected,usable:state.usable,playing:state.playing}}});
-ipcMain.handle('mineradio-settings-fonts',async event=>{settingsSender(event);try{const rows=await systemFonts.listFonts();refreshFontProfile();tick();return rows;}catch(error){record({type:'font-enumeration-error',error:error.stack,detail:error.cause?.stack||error.cause?.message,stderr:error.helperStderr});throw error;}});
+ipcMain.handle('mineradio-settings-fonts',async event=>{settingsSender(event);try{const rows=await systemFonts.listFonts(desktop.enumerateFonts);refreshFontProfile();refreshPresentation();return rows;}catch(error){record({type:'font-enumeration-error',error:error.stack,detail:error.cause?.stack||error.cause?.message,stderr:error.helperStderr});throw error;}});
 ipcMain.handle('mineradio-settings-preview',(event,value)=>{settingsSender(event);const p=preferences.normalize(value),families=systemFonts.fontProfile(p);return {...(p.colorMode==='fixed'?fromHex(p.fixedColor):palette.current()),fontFamily:families.default,fontFamilies:families,lyricLanguage:p.lyricLanguage,fontWeight:900}});
 ipcMain.handle('mineradio-settings-save',(event,value)=>{
   settingsSender(event);
@@ -418,7 +493,7 @@ ipcMain.handle('mineradio-settings-save',(event,value)=>{
   record({type:'settings-saved',settings});
   // The panel title is local presentation; saving it alone does not refresh lyrics.
   if(previous.fontFamily!==settings.fontFamily || JSON.stringify(previous.fontFamilies)!==JSON.stringify(settings.fontFamilies) || previous.lyricLanguage!==settings.lyricLanguage || previous.colorMode!==settings.colorMode || previous.fixedColor!==settings.fixedColor || JSON.stringify(previous.captions)!==JSON.stringify(settings.captions)){
-    refreshFontProfile();tick();
+    refreshFontProfile();refreshPresentation();
   }
   return settings;
 });
@@ -428,19 +503,21 @@ ipcMain.on("mineradio-display-observation", (event, payload) => {
 });
 ipcMain.handle(channel + "set-dragging", (event,active) => {
   if(event.sender!==win?.webContents)return {ok:false};
+  if (nativeDesktop) {
+    win.setLyricDragging(active);
+    return {ok:true};
+  }
   // Native button-up owns a native drag; a blur/capture-loss message must not
   // cancel it while the physical left button is still held.
   if(!dragAnchor?.native)dragAnchor=active&&!locked?{cursor:screen.getCursorScreenPoint(),bounds:win.getBounds(),ink:hot?{...hot}:null}:null;
   return {ok:true};
 });
-ipcMain.handle(channel + "set-pointer-capture", (_e, v) => {
-  pointer = !!v && !locked;
-  mouse();
-  return { ok: true };
-});
+ipcMain.handle(channel + "set-pointer-capture", () => ({ ok: true }));
 ipcMain.handle(channel + "set-hot-bounds", (_e, b) => {
-  if (["left", "top", "right", "bottom"].every((k) => Number.isFinite(b[k])))
+  if (["left", "top", "right", "bottom"].every((k) => Number.isFinite(b[k]))) {
     hot = b;
+    if (nativeDesktop) win.setLyricHotBounds(b);
+  }
   return { ok: true };
 });
 ipcMain.handle(channel + "set-lock-state", (_e, v) => {
@@ -470,14 +547,15 @@ ipcMain.handle(channel + "set-enabled", () => {
   app.quit();
   return { ok: true };
 });
-app.whenReady().then(async () => {
-  if(desktopConfig && !await desktopStartup.prepare(desktopConfig,{app,dialog,record,runDir}))return;
+function openOverlay() {
+  if (win && !win.isDestroyed()) return overlayOpening;
   const area = screen.getPrimaryDisplay().workArea;
   const width = Math.min(area.width - 40, 1200),
     height = Math.min(area.height - 40, 400);
   overlayDimensions = { width, height };
-  const initialBounds=windowPlacement.place(savedPlacement,{width,height,x:Math.round(area.x+(area.width-width)/2),y:Math.round(area.y+area.height*.68-height/2)},screen.getAllDisplays().map(display=>display.workArea));
-  win = new BrowserWindow({
+  const placement = placementBounds ? { bounds: placementBounds } : savedPlacement;
+  const initialBounds=windowPlacement.place(placement,{width,height,x:Math.round(area.x+(area.width-width)/2),y:Math.round(area.y+area.height*.68-height/2)},screen.getAllDisplays().map(display=>display.workArea));
+  const view = new BrowserWindow({
     ...initialBounds,
     title: "Mineradio External Lyrics",
     icon: appIconPath,
@@ -497,36 +575,77 @@ app.whenReady().then(async () => {
       backgroundThrottling: false,
     },
   });
-  win.on('move',rememberPlacement);
-  win.on('resize',rememberPlacement);
+  win = view;
+  sentWire = undefined;
+  appliedIgnore = null;
+  view.on('move',rememberPlacement);
+  view.on('resize',rememberPlacement);
   rememberPlacement();
-  win.setAlwaysOnTop(true, "screen-saver");
-  visibility=new Visibility({
-    hide:()=>{dragAnchor=null;win.hide();},
-    prepare:serial=>new Promise((resolve,reject)=>{
-      const timeout=setTimeout(()=>{visibilityWaiters.delete(serial);reject(Error('歌词窗口未及时回应显隐请求'));},1500);
-      const ready=()=>{clearTimeout(timeout);visibilityWaiters.delete(serial);resolve();};
-      visibilityWaiters.set(serial,ready);
-      tick();
-      ready.expected={text:wire.text,progress:wire.progress,track:timeline.snapshot().track?.id};
-    }),
-    show:()=>{mouse();win.showInactive();record({type:'visibility-shown',serial:visibility.serial,bounds:win.getBounds(),locked});},
-    changed:(visible,reason,serial)=>{refreshTray();record({type:'visibility',visible,reason,serial,bounds:win.getBounds(),locked});}
-  });
+  if (!nativeDesktop) view.setAlwaysOnTop(true, "screen-saver");
+  else view.on('middle-button', () => setLock(!locked));
   mouse();
-  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  win.webContents.on("will-navigate", (e) => e.preventDefault());
-  win.webContents.on("console-message", (_e, ...args) =>
-    record({ type: "renderer-console", args: args.map(String) }),
-  );
-  win.webContents.on("render-process-gone", (_e, details) =>
+  if (!nativeDesktop) {
+    view.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    view.webContents.on("will-navigate", (e) => e.preventDefault());
+    view.webContents.on("console-message", (_e, ...args) =>
+      record({ type: "renderer-console", args: args.map(String) }),
+    );
+  }
+  view.webContents.on("render-process-gone", (_e, details) =>
     record({ type: "renderer-gone", details }),
   );
-  await win.loadFile(path.join(root, "vendor/desktop-lyrics.html"));
+  overlayOpening = view.loadFile(path.join(root, "vendor/desktop-lyrics.html")).then(() => {
+    if (!visibility.visible) retainHiddenOverlay();
+  }).finally(() => { overlayOpening = null; });
+  return overlayOpening;
+}
+function retainHiddenOverlay() {
+  clearTimeout(overlayRelease);
+  if (!nativeDesktop || !win?.loaded) return;
+  overlayRelease = setTimeout(() => {
+    const view = win;
+    win = null;
+    hot = null;
+    sentWire = undefined;
+    view.close();
+    record({ type: 'overlay-released' });
+  }, hiddenRetentionMs);
+}
+app.whenReady().then(async () => {
+  if(desktopConfig && !await desktopStartup.prepare(desktopConfig,{app,dialog,shell,record,runDir}))return;
+  visibility=new Visibility({
+    hide:()=>{
+      dragAnchor=null;
+      if (nativeDesktop) stopRenderTimer();
+      win?.hide();
+      retainHiddenOverlay();
+    },
+    prepare:async serial=>{
+      clearTimeout(overlayRelease);
+      await openOverlay();
+      if (!visibility.visible || visibility.serial !== serial) return;
+      await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>{visibilityWaiters.delete(serial);reject(Error('歌词窗口未及时回应显隐请求'));},1500);
+        const ready=()=>{clearTimeout(timeout);visibilityWaiters.delete(serial);resolve();};
+        visibilityWaiters.set(serial,ready);
+        tick();
+        ready.expected={text:wire.text,progress:wire.progress,track:timeline.snapshot().track?.id};
+      });
+    },
+    show:()=>{mouse();win.showInactive();record({type:'visibility-shown',serial:visibility.serial,bounds:win.getBounds(),locked});},
+    changed:(visible,reason,serial)=>{
+      for (const ready of visibilityWaiters.values()) ready();
+      refreshTray();
+      record({type:'visibility',visible,reason,serial,bounds:win?.getBounds()||placementBounds,locked});
+    }
+  });
   await visibility.set(true,'startup');
   tray = new Tray(trayIconPath);
   tray.setToolTip("Mineradio 外部歌词");
-  visibilityRegistered=globalShortcut.register('Control+Alt+H',()=>{void visibility.shortcut()?.catch(e=>record({type:'visibility-error',error:e.message}));});
+  visibilityRegistered=await globalShortcut.register('Control+Alt+H',()=>{
+    const changed = nativeDesktop ? visibility.toggle('shortcut') : visibility.shortcut();
+    void changed?.catch(e=>record({type:'visibility-error',error:e.message}));
+  });
   visibilityRegistered=visibilityRegistered&&globalShortcut.isRegistered('Control+Alt+H');
   record({type:'visibility-shortcut',accelerator:'Control+Alt+H',registered:visibilityRegistered});
   refreshTray();
@@ -534,7 +653,7 @@ app.whenReady().then(async () => {
   globalShortcut.register("Control+Alt+L", () => setLock(!locked));
   globalShortcut.register("Control+Alt+S", openSettings);
   globalShortcut.register("Control+Alt+Q", () => app.quit());
-  middlePoll();
+  if (!nativeDesktop) middlePoll();
   const started = performance.now();
   if (demo) {
     receive(demoSample(0));
@@ -565,8 +684,8 @@ app.whenReady().then(async () => {
     });
   } else attachProbe();
   if(desktopConfig)await desktopStartup.ensureClient(desktopConfig,{record,dialog,runDir});
-  timer = setInterval(tick, 33);
-  metrics = setInterval(
+  if (!nativeDesktop) timer = setInterval(tick, frameDelay);
+  if (auditLog) metrics = setInterval(
     () =>
       record({
         type: "metrics",
@@ -578,7 +697,7 @@ app.whenReady().then(async () => {
     5000,
   );
   tick();
-  if (process.argv.includes("--live-audit")) {
+  if (!nativeDesktop && process.argv.includes("--live-audit")) {
     let auditBusy = false;
     const auditSeconds = Number(process.argv.find(a=>a.startsWith("--live-audit-seconds="))?.split("=")[1] || 180);
     if (!Number.isInteger(auditSeconds) || auditSeconds < 5 || auditSeconds > 1800) throw Error("Invalid bounded audit duration");
@@ -705,12 +824,14 @@ app.whenReady().then(async () => {
 app.on("before-quit", () => {
   savePlacement();
   app.isQuitting = true;
-  clearInterval(timer);
+  stopRenderTimer();
+  clearTimeout(overlayRelease);
   clearInterval(metrics);
   probe?.kill();
-  void bridge?.close();
+  const bridgeClosed = bridge?.close();
   poller?.kill();
+  systemFonts.stopFontEnumeration();
   globalShortcut.unregisterAll();
-  log.end();
+  return Promise.all([bridgeClosed, new Promise(resolve => log.end(resolve))]);
 });
 app.on("window-all-closed", () => app.quit());

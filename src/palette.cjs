@@ -2,6 +2,8 @@
 // chroma/luminance scoring, bright text HSL, related highlight, 520ms smoothstep.
 // No Three.js, player, random colors or per-frame image work.
 const DEFAULT={primary:'#f6fdff',secondary:'#a8f6ff',highlight:'#fff0b8',glow:'#9cffdf'};
+const colorKeys=Object.keys(DEFAULT);
+const transitionMs=520;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function hsl(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,l=(max+min)/2;let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));h=(max===r?(g-b)/d+(g<b?6:0):max===g?(b-r)/d+2:(r-g)/d+4)/6}return {h,s,l}}
 function rgb(h,s,l){h=(h%1+1)%1;const f=n=>{const k=(n+h*12)%12;return Math.round(255*(l-s*Math.min(l,1-l)*Math.max(-1,Math.min(k-3,9-k,1))))};return '#'+[f(0),f(8),f(4)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -11,8 +13,26 @@ function fromBitmap(bitmap){let best=null,sum=[0,0,0],count=0,maxChroma=0;for(le
 }
 class CoverPalette {
   constructor({decode,record=()=>{},fetcher=fetch}){this.decode=decode;this.record=record;this.fetcher=fetcher;this.ids=new Map();this.covers=new Map();this.generation=0;this.key='';this.value={...DEFAULT};this.from=this.value;this.target=this.value;this.changedAt=0}
-  targetPalette(value){this.from=this.current();this.target=value;this.changedAt=performance.now()}
-  current(){const t=clamp((performance.now()-this.changedAt)/520,0,1),e=t*t*(3-2*t),out={};for(const k of Object.keys(DEFAULT)){const a=this.from[k].match(/[\da-f]{2}/ig).map(x=>parseInt(x,16)),b=this.target[k].match(/[\da-f]{2}/ig).map(x=>parseInt(x,16));out[k]='#'+a.map((x,i)=>Math.round(x+(b[i]-x)*e).toString(16).padStart(2,'0')).join('')}return out}
+  targetPalette(value){
+    if(colorKeys.every(key=>this.target[key]===value[key]))return;
+    this.from=this.current();
+    this.target=value;
+    this.changedAt=performance.now();
+    const channels=colors=>colorKeys.map(key=>colors[key].match(/[\da-f]{2}/ig).map(hex=>parseInt(hex,16)));
+    this.fromChannels=channels(this.from);
+    this.targetChannels=channels(value);
+  }
+  transitioning(at=performance.now()){return this.from!==this.target&&at-this.changedAt<transitionMs}
+  current(){
+    const at=performance.now();
+    if(!this.transitioning(at))return this.target;
+    const t=clamp((at-this.changedAt)/transitionMs,0,1),e=t*t*(3-2*t),out={};
+    for(let i=0;i<colorKeys.length;i++){
+      out[colorKeys[i]]='#'+this.fromChannels[i].map((channel,index)=>
+        Math.round(channel+(this.targetChannels[i][index]-channel)*e).toString(16).padStart(2,'0')).join('');
+    }
+    return out;
+  }
   async json(url,signal){const r=await this.fetcher(url,{signal,redirect:'error'});if(!r.ok)throw Error('Cover metadata HTTP '+r.status);return r.json()}
   async change(track,prefs){const key=JSON.stringify([track?.id,prefs.colorMode,prefs.fixedColor]);if(key===this.key)return;this.key=key;const generation=++this.generation;this.abort?.abort();this.abort=new AbortController();const signal=AbortSignal.any([this.abort.signal,AbortSignal.timeout(7000)]);
     if(prefs.colorMode==='fixed'){this.targetPalette(fromHex(prefs.fixedColor));return}
@@ -20,7 +40,7 @@ class CoverPalette {
     if(!/^\d+$/.test(String(track?.id||'')))return;
     try{let url=this.ids.get(track.id);if(!url){const data=await this.json('https://music.163.com/api/song/detail/?id='+track.id+'&ids='+encodeURIComponent('['+track.id+']'),signal);const song=data.songs?.find(s=>String(s.id)===String(track.id));url=song?.album?.picUrl||song?.al?.picUrl;if(!url)throw Error('No cover URL');url=url.replace(/^http:/,'https:');this.ids.set(track.id,url);if(this.ids.size>64)this.ids.delete(this.ids.keys().next().value)}
       const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)music\.126\.net$/.test(u.hostname)||u.port||u.username||u.password)throw Error('Cover CDN not allowed');
-      let colors=this.covers.get(url);if(!colors){const r=await this.fetcher(url+(u.search?'&':'?')+'param=64y64',{signal,redirect:'error'});if(!r.ok)throw Error('Cover HTTP '+r.status);const chunks=[];let size=0;for await(const c of r.body){size+=c.length;if(size>2*1024*1024)throw Error('Cover too large');chunks.push(c)}colors=fromBitmap(this.decode(Buffer.concat(chunks)));this.covers.set(url,colors);if(this.covers.size>32)this.covers.delete(this.covers.keys().next().value)}
+      let colors=this.covers.get(url);if(!colors){const r=await this.fetcher(url+(u.search?'&':'?')+'param=64y64',{signal,redirect:'error'});if(!r.ok)throw Error('Cover HTTP '+r.status);const chunks=[];let size=0;for await(const c of r.body){size+=c.length;if(size>2*1024*1024)throw Error('Cover too large');chunks.push(c)}colors=fromBitmap(await this.decode(Buffer.concat(chunks)));this.covers.set(url,colors);if(this.covers.size>32)this.covers.delete(this.covers.keys().next().value)}
       if(generation!==this.generation)return;this.targetPalette(colors);this.record({type:'cover-palette',trackId:track.id,cover:url,colors});
     }catch(error){if(generation===this.generation){this.targetPalette(DEFAULT);this.record({type:'cover-fallback',trackId:track.id,error:error.message})}}
   }

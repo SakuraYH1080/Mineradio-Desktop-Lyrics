@@ -12,7 +12,7 @@ function expandPath(value, base) {
 function executable(file) { try { return !!file && fs.statSync(file).isFile() && path.basename(file).toLowerCase() === 'cloudmusic.exe'; } catch { return false; } }
 function identity(file) { try { return fs.realpathSync.native(file).toLowerCase(); } catch { return path.resolve(file).toLowerCase(); } }
 function resolveConfig(app) {
-  const base = path.dirname(process.execPath);
+  const base = path.dirname(app.getPath('exe'));
   const argument = process.argv.find(value => value.startsWith('--desktop-config='));
   const file = argument ? expandPath(argument.slice('--desktop-config='.length), base) : path.join(base, 'desktop-launch.json');
   const userDirectory=path.join(app.getPath('appData'),'MineradioExternalLyrics');
@@ -71,16 +71,11 @@ async function ensureClient(config, {record, dialog, runDir}) {
       return;
     }
     if (!client) throw Error('没有找到官方网易云客户端。请重新打开连接设置，选择实际的 cloudmusic.exe。');
-    const stdout = fs.openSync(path.join(runDir, 'client.stdout.log'), 'a');
-    let stderr;
-    try {
-      stderr = fs.openSync(path.join(runDir, 'client.stderr.log'), 'a');
-      await new Promise((resolve, reject) => {
-        const child = spawn(client, [], {cwd:path.dirname(client), windowsHide:true, detached:true, stdio:['ignore',stdout,stderr]});
-        child.once('error', reject);
-        child.once('spawn', () => {record({type:'client-started', executable:client, pid:child.pid});child.unref();resolve();});
-      });
-    } finally { fs.closeSync(stdout); if (stderr !== undefined) fs.closeSync(stderr); }
+    await new Promise((resolve, reject) => {
+      const child = spawn(client, [], {cwd:path.dirname(client), windowsHide:true, detached:true, stdio:'ignore'});
+      child.once('error', reject);
+      child.once('spawn', () => {record({type:'client-started', executable:client, pid:child.pid});child.unref();resolve();});
+    });
   } catch (error) {
     record({type:'client-start-error', error:error.stack || error.message});
     await dialog.showMessageBox({type:'warning', title:'Mineradio 桌面歌词', message:'未能自动连接或启动网易云', detail:error.message+'\n\n可以手动打开原版网易云，歌词程序将继续等待连接。日志：'+runDir});
