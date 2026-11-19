@@ -11,13 +11,13 @@
 ## 1. 安装
 
 1. 核对附件中的 `SHA256SUMS.txt`，确认下载文件与交付校验值一致。
-2. 运行 Windows x64 的 `Setup.exe`。默认按当前 Windows 用户安装到 `%LOCALAPPDATA%\Programs\MineradioLyrics`，可在向导中选择目录。
+2. 运行 Windows x64 的 `Setup.exe`。安装面向当前 Windows 用户，可在向导中选择目录。
 3. 完成后手动打开桌面或开始菜单的 **Mineradio 桌面歌词**。它直接运行 `MineradioLyrics.exe`，没有 CMD／PowerShell／npm 启动中转。
 4. 当前未配置插件时，按下面的首次连接说明处理；不必重新安装歌词程序。
 
 安装结束后，从桌面或开始菜单启动。
 
-可在安装包的“属性 → 数字签名”中核对发布者，并对照 `SHA256SUMS.txt` 核对文件。新的 GitHub 安装包即使签名有效，也可能在积累下载声誉期间触发 SmartScreen 提示。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
+rc.5 预发布安装包未签名。可对照 `SHA256SUMS.txt` 核对下载文件，Windows 可能显示未知发布者或 SmartScreen 提示。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
 ## 2. 首次连接检查
 

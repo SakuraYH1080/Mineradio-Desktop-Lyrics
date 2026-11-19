@@ -292,11 +292,11 @@ function tick() {
     void palette.change(s.track, settings).then(() => requestRender());
   }
   if(languageValue!==lyrics.value){languageValue=lyrics.value;languageContext=typography.contextLanguage(lyrics.value.lines || []);}
-  const located = s.usable ? locate(lyrics.value, s.position) : null;
+  const located = s.usable ? locate(lyrics.value, s.position, s.duration) : null;
   const statusCaption = preferences.presentation(s, lyrics.value, settings, located);
   const lyric = statusCaption ? {
       text:statusCaption.text, progress:0, scrollProgress:0, highlightFollow:false,
-      progressMode:'line', progressSpan:4.8,
+      progressMode:'line', progressSpan:0,
       lineKey:`${s.key}|caption|${statusCaption.kind}`,
     }
     : located || {
@@ -325,7 +325,7 @@ function tick() {
     progressResetReason: s.resetReason,
     trackGeneration: s.key,
     playing: s.playing,
-    playback: { time: s.position, duration: s.duration, rate: 1 },
+    playback: { time: s.position, duration: s.duration, rate: s.rate },
     motion: motion({ demo, playing: s.playing, time: s.position, audio: enableAudio ? timeline.sample?.audio : null }),
     allowSyntheticBeat: demo,
     beatMap: null,

@@ -33,7 +33,8 @@ module.exports = {
     perMachine: false,
     allowElevation: false,
     packElevateHelper: false,
-    allowToChangeInstallationDirectory: true,
+    // installer.nsh supplies the directory page without electron-builder's suffix.
+    allowToChangeInstallationDirectory: false,
     runAfterFinish: false,
     createDesktopShortcut: 'always',
     createStartMenuShortcut: true,

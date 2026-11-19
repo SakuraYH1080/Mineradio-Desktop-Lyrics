@@ -6,7 +6,7 @@
 
 **[下载 1.0.0 正式版 Windows x64 安装包](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Setup.exe)** · [正式版便携包](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v1.0.0/Mineradio-Desktop-Lyrics-1.0.0-x64-Portable.zip) · [发布说明与校验文件](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.0.0)
 
-**[下载 1.1.0-rc.2 预发布版](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.1.0-rc.2)**。候选包使用 Windows 的共享 Microsoft Edge WebView2 Evergreen Runtime。缺少运行时的设备可从微软下载安装。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
+**[下载 1.1.0-rc.5 预发布版](https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/tag/v1.1.0-rc.5)**。候选包使用 Windows 的共享 Microsoft Edge WebView2 Evergreen Runtime。缺少运行时的设备可从微软下载安装。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
 
 安装版与便携版二选一即可。普通用户无需安装 Node、npm 或开发环境；源码 ZIP 用于开发和复现构建。
 
@@ -58,9 +58,9 @@
 
 ```powershell
 npm ci
-python tools/build-desktop.py --output .runtime/release-1.1.0-rc.2
-npm run build:setup -- --prepackaged .runtime/release-1.1.0-rc.2 --output artifacts/1.1.0-rc.2
-python tools/package-candidate.py --directory .runtime/release-1.1.0-rc.2 --release artifacts/1.1.0-rc.2
+python tools/build-desktop.py --output .runtime/release-1.1.0-rc.5
+npm run build:setup -- --prepackaged .runtime/release-1.1.0-rc.5 --output artifacts/1.1.0-rc.5
+python tools/package-candidate.py --directory .runtime/release-1.1.0-rc.5 --release artifacts/1.1.0-rc.5
 ```
 
 为每次构建指定新输出目录。`resources/app` 按发布清单装入界面、歌词逻辑、连接设置和内置 Bridge。应用自带 Node.js，复用系统 WebView2。源码包记录基线提交和实际打包文件的哈希。

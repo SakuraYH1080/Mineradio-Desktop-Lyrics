@@ -177,6 +177,7 @@ class Timeline {
       usable,
       position: this.position(at),
       duration: this.anchor?.duration || 0,
+      rate: this.anchor?.rate || 1,
       playing:
         usable && this.sample?.status === "playing" && this.anchor.playing,
       quality: !healthy

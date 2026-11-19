@@ -6,12 +6,39 @@ test('captions preserve hidden text, persist, stay plain and do not replace paus
  assert.deepEqual(prefs.load(file),value);assert.equal(prefs.caption(value.captions.waiting,{title:'A'}),'A <img>');
  assert.equal(prefs.presentation({connected:true,usable:true,track:{id:'1'},playing:false},{lines:[{text:'keep'}]},value),null);
  assert.deepEqual(prefs.presentation({connected:true,usable:true,track:{id:'1'}},{kind:'instrumental',lines:[]},value),{kind:'instrumental',text:''});
- assert.equal(prefs.presentation({connected:true,usable:true,track:{}},{kind:'failure',lines:[]},value).kind,'missing');
+ assert.deepEqual(prefs.presentation({connected:true,usable:true,track:{}},{kind:'failure',lines:[]},value),{kind:'failure',text:value.captions.missing});
  fs.unlinkSync(file);fs.rmdirSync(dir);
 });
 test('real bitmap colors deterministic; monochrome neutral; fixed palette bright',()=>{
  const red=Buffer.from([0,0,180,255]),blue=Buffer.from([180,0,0,255]);assert.notDeepEqual(fromBitmap(red),fromBitmap(blue));assert.deepEqual(fromBitmap(red),fromBitmap(red));
  const mono=fromBitmap(Buffer.from([40,40,40,255]));assert.match(mono.primary,/^#([a-f0-9]{2})\1\1$/);assert.notEqual(fromHex('#000000').primary,'#000000');
+ for (const input of ['#ff0000','#0000ff','#ff00cc','#802008','#ff9900']) {
+  for (const color of Object.values(fromHex(input))) assert.match(color, /^#[\da-f]{6}$/);
+ }
+ assert.match(fromBitmap(red).primary, /^#ff/);
+});
+test('switching tracks holds the last cover palette while the new image loads', async () => {
+  const red = Buffer.from([0, 0, 255, 255]);
+  const green = Buffer.from([0, 255, 0, 255]);
+  const { promise, resolve } = Promise.withResolvers();
+  const palette = new CoverPalette({decode: bytes => bytes, fetcher: async url => {
+    const target = new URL(url);
+    if (target.pathname === '/api/song/detail/') {
+      const id = target.searchParams.get('id');
+      if (id === '3') return {ok:true, json:async () => ({songs:[]})};
+      return {ok:true, json:async () => ({songs:[{id, al:{picUrl:`https://p1.music.126.net/${id}.jpg`}}]})};
+    }
+    if (target.pathname === '/1.jpg') return {ok:true, body:[red]};
+    return promise;
+  }});
+  await palette.change({id:'1'}, prefs.defaults);
+  const next = palette.change({id:'2'}, prefs.defaults);
+  assert.deepEqual(palette.target, fromBitmap(red));
+  resolve({ok:true, body:[green]});
+  await next;
+  assert.deepEqual(palette.target, fromBitmap(green));
+  await palette.change({id:'3'}, prefs.defaults);
+  assert.deepEqual(palette.target, DEFAULT);
 });
 test('cover races cannot replace new track; failure uses default; same cover cached',async()=>{
  let release,requests=0;const pending=new Promise(r=>release=r);

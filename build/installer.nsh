@@ -4,9 +4,14 @@
   !error "Use tools/build-installer.cjs so uninstall has an explicit owned-file list."
 !endif
 
+!macro customPageAfterChangeDir
+  !insertmacro skipPageIfUpdated
+  !insertmacro MUI_PAGE_DIRECTORY
+!macroend
+
 !macro MINERADIO_VALIDATE_INSTALL_DIR
   ; Called from the official CHECK_APP_RUNNING hook inside installSection,
-  ; after the directory page's final sanitization and before any old uninstall
+  ; after the install path is chosen and before any old uninstall
   ; or package extraction. It also applies to /S and /D command-line installs.
   Push $R2
   Push $R3
@@ -18,8 +23,17 @@
     StrCpy $R6 "1"
   ${Else}
     GetFullPathName $R2 "$INSTDIR"
+    ${If} $R2 == ""
+      ; NSIS cannot resolve the long name of a directory that does not exist yet.
+      System::Call 'kernel32::GetFullPathNameW(w "$INSTDIR", i ${NSIS_MAX_STRLEN}, w .r12, p 0) i.r13'
+      ${If} $R3 == "0"
+      ${OrIf} $R3 >= ${NSIS_MAX_STRLEN}
+        StrCpy $R2 ""
+      ${EndIf}
+    ${EndIf}
     ${GetRoot} "$R2" $R3
-    ${If} $R2 == "$R3\"
+    ${If} $R2 == ""
+    ${OrIf} $R2 == "$R3\"
     ${OrIf} $R2 == $R3
     ${OrIf} $R2 == $PROFILE
     ${OrIf} $R2 == $WINDIR

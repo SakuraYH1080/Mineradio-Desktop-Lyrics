@@ -11,12 +11,12 @@ Windows SDK 的 x64 `signtool.exe` 会从 PATH 或已登记的 SDK 中查找。�
 
 ## 生成发布附件
 
-配置上述任一签名凭据后，从仓库根目录运行以下命令。示例使用 1.1.0-rc.2。
+配置上述任一签名凭据后，从仓库根目录运行以下命令。示例使用 1.1.0-rc.5。
 
 ```powershell
-python tools/build-desktop.py --output .runtime/signing-1.1.0-rc.2
-npm run build:setup:signed -- --prepackaged .runtime/signing-1.1.0-rc.2 --output artifacts/1.1.0-rc.2-signed
-python tools/package-candidate.py --directory artifacts/1.1.0-rc.2-signed/.build/payload --release artifacts/1.1.0-rc.2-signed
+python tools/build-desktop.py --output .runtime/signing-1.1.0-rc.5
+npm run build:setup:signed -- --prepackaged .runtime/signing-1.1.0-rc.5 --output artifacts/1.1.0-rc.5-signed
+python tools/package-candidate.py --directory artifacts/1.1.0-rc.5-signed/.build/payload --release artifacts/1.1.0-rc.5-signed
 ```
 
 流程会先签名主程序，再签名 NSIS 卸载器和安装器。Windows 验签通过后，正式附件才会出现在输出目录顶层。Node.js 使用上游已签名的固定二进制。便携 ZIP 使用与安装器相同的签名文件。

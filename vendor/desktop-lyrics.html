@@ -20,9 +20,12 @@
       --lyric-feather:5.5%;
       --lyric-fit-x:1;
       --lyric-scroll-x:0px;
+      --lyric-enter-duration:820ms;
       --lyric-edge-width:92px;
       --lyric-mask-edge-width:92px;
       --lyric-css-beat-glow:0px;
+      --lyric-brightness:1.04;
+      --lyric-saturation:1.08;
       --lyric-shadow-soft:rgba(156,255,223,.34);
       --lyric-shadow-glow:rgba(156,255,223,.26);
     }
@@ -69,6 +72,9 @@
       transform:translate3d(var(--lyric-scroll-x),0,0) scaleX(var(--lyric-fit-x));
       transform-origin:center;
       backface-visibility:hidden;
+      /* Dark shadows sit behind the clipped fill and stay on the lyric layer. */
+      filter:drop-shadow(0 1px 2.4px rgba(4,6,12,.58)) drop-shadow(0 0 4.8px rgba(4,6,12,.30))
+        brightness(var(--lyric-brightness)) saturate(var(--lyric-saturation));
     }
     .line{
       position:relative;
@@ -93,7 +99,7 @@
       -webkit-text-fill-color:transparent;
       -webkit-text-stroke:.18px rgba(255,255,255,.72);
       paint-order:stroke fill;
-      text-shadow:0 1px 2px rgba(4,6,12,.46),0 0 1px rgba(255,255,255,.34),0 0 calc(6px + var(--lyric-css-beat-glow)) var(--lyric-shadow-soft),0 0 calc(14px + var(--lyric-css-beat-glow)) var(--lyric-shadow-glow);
+      text-shadow:0 0 1px rgba(255,255,255,.34),0 0 calc(6px + var(--lyric-css-beat-glow)) var(--lyric-shadow-soft),0 0 calc(14px + var(--lyric-css-beat-glow)) var(--lyric-shadow-glow);
       filter:none;
       opacity:1;
       transform:translate3d(0,0,0);
@@ -110,7 +116,7 @@
       -webkit-background-clip:text;
       background-clip:text;
     }
-    .line.in{animation:lyr-in 820ms cubic-bezier(.16,.84,.32,1.02) forwards}
+    .line.in{animation:lyr-in var(--lyric-enter-duration) cubic-bezier(.16,.84,.32,1.02) forwards}
     body.paused .line{filter:none;opacity:.84}
     .lock-hint{
       position:absolute;
@@ -210,7 +216,7 @@
     var hintVisible = false;
     var hintTimer = 0;
     var lastPointerEvent = null;
-    var scrollState = { needed:false, width:0, clearWidth:0, start:0, end:0, limit:0, offset:0 };
+    var scrollState = { needed:false, width:0, clearWidth:0, start:0, end:0, offset:0 };
     var layoutDpr = window.devicePixelRatio || 1;
     var live = { solar:0, beat:0, bass:0, scale:1, lift:0 };
     var state = {
@@ -382,12 +388,12 @@
         desktopBeat.bassDrive = 0;
       }
     }
-    function applyDesktopPlayback(payload) {
+    function applyDesktopPlayback(payload, nowMs) {
       if (!payload) return;
       state.playbackTime = Math.max(0, Number(payload.time) || 0);
       state.playbackDuration = Math.max(0, Number(payload.duration) || 0);
       state.playbackRate = clamp(Number(payload.rate) || 1, .25, 4, 1);
-      state.playbackReceivedAt = performance.now();
+      state.playbackReceivedAt = nowMs;
     }
     function currentDesktopPlaybackTime(nowMs) {
       var t = Math.max(0, Number(state.playbackTime) || 0);
@@ -550,10 +556,12 @@
     }
     function lyricScrollEase(t) {
       t = clamp(t, 0, 1, 0);
-      return t * t * t * (t * (t * 6 - 15) + 10);
-    }
-    function lyricScrollInitialHoldMs() {
-      return Math.round(clamp(state.scrollSpan * 130, 140, 520, 320));
+      // Ease into a steady pace so the middle of the line doesn't rush past.
+      var ramp = .18;
+      var distance = 1 - ramp;
+      if (t < ramp) return t * t / (2 * ramp * distance);
+      if (t > 1 - ramp) return 1 - (1 - t) * (1 - t) / (2 * ramp * distance);
+      return (t - ramp / 2) / distance;
     }
     function layoutLeftWithin(element, ancestor) {
       var left = 0;
@@ -576,6 +584,7 @@
         state.letterSpacing,
         state.lineHeight,
         state.highlightFollow,
+        state.scrollSpan,
         innerWidth,
         innerHeight,
         window.devicePixelRatio || 1
@@ -598,7 +607,9 @@
       var size = baseFontSize;
       fitScaleX = 1;
       var minSize = Math.max(24, Math.min(32, baseFontSize * .55));
-      var maxScrollableWidth = readableWidth * 1.76;
+      var scrollRoom = readableWidth * .76;
+      if (state.scrollSpan > 0) scrollRoom = Math.min(scrollRoom, state.scrollSpan * 240);
+      var maxScrollableWidth = readableWidth + scrollRoom;
       for (var i = 0; i < 24; i++) {
         var measured = lyricLayout.measure(size,state.fontWeight,state.letterSpacing,state.lineHeight);
         if ((measured.width <= maxScrollableWidth && measured.height <= maxHeight) || size <= minSize) break;
@@ -606,7 +617,7 @@
       }
       renderedFontSize = Math.round(size);
       var measuredWidth = measureLineWidth(renderedFontSize);
-      var maxRenderedWidth = readableWidth * 1.82;
+      var maxRenderedWidth = maxScrollableWidth + readableWidth * .06;
       if (measuredWidth > maxRenderedWidth) {
         fitScaleX = clamp(maxRenderedWidth / measuredWidth, .72, 1, 1);
       }
@@ -626,8 +637,7 @@
       var origin = scrollerLeft + lyricScroller.offsetWidth / 2;
       var textLeft = origin + (layoutLeftWithin(line, lyricViewport) - origin) * fitScaleX;
       scrollState.width = line.offsetWidth * fitScaleX;
-      scrollState.limit = Math.max(0, (scrollState.width - scrollState.clearWidth) / 2);
-      scrollState.needed = scrollState.limit > .5;
+      scrollState.needed = scrollState.width - scrollState.clearWidth > 1;
       lyricViewport.classList.toggle('scrolling', scrollState.needed);
       scrollState.start = scrollState.needed ? clearLeft - textLeft : 0;
       scrollState.end = scrollState.needed ? clearRight - textLeft - scrollState.width : 0;
@@ -644,28 +654,19 @@
         setRootVar('--lyric-scroll-x', '0px');
         return;
       }
-      var limit = scrollState.limit;
-      var wordTimed = state.highlightFollow === true && state.progressMode === 'word';
-      var p = wordTimed ? lyricLayout.pixelProgress(clamp(progress == null ? state.progress : progress, 0, 1, 0)) : state.scrollProgress;
-      var highlightP = p;
-      // Upstream start/end gates and quintic easing, driven by THIS line's
-      // seconds/word progress. No independent elapsed-time marquee or retained
-      // one-way minimum, so backward seeks and re-show can immediately align.
-      var rawP = wordTimed ? lyricLayout.pixelProgress(state.progress) : state.scrollProgress;
-      var finalCatch = clamp((rawP - .88) / .12, 0, 1, 0);
-      p = Math.max(p, rawP - .10 * finalCatch);
-      var spanMs = Math.max(450, state.scrollSpan * 1000);
-      var startGate = clamp(lyricScrollInitialHoldMs() / spanMs, .035, .18, .08);
-      var longLineBias = clamp(limit / Math.max(260, innerWidth), 0, .30, .12);
-      var shortLineBias = clamp((4.8 - state.scrollSpan) / 8, 0, .16, 0);
-      var endGate = clamp(.84 - longLineBias * .38 - shortLineBias * .50, .62, .88, .78);
-      if (endGate <= startGate + .12) endGate = startGate + .12;
-      var travel = lyricScrollEase((p - startGate) / (endGate - startGate));
+      var travel = 0;
+      if (state.scrollSpan > 0) {
+        var spanMs = state.scrollSpan * 1000 / state.playbackRate;
+        var elapsed = state.playing ? clamp(nowMs - state.progressReceivedAt, 0, 100, 0) : 0;
+        var timeProgress = state.scrollProgress + elapsed / spanMs;
+        var startGate = Math.min(.12, 240 / spanMs);
+        var endGate = 1 - Math.min(.16, 360 / spanMs);
+        travel = lyricScrollEase((timeProgress - startGate) / (endGate - startGate));
+      }
       scrollState.offset = scrollState.start + (scrollState.end - scrollState.start) * travel;
-      if (wordTimed) {
-        // Only constrain the upstream path if an exceptionally wide line
-        // would move its currently displayed highlight outside the viewport.
-        var highlightDistance = scrollState.width * highlightP;
+      if (state.highlightFollow && state.progressMode === 'word') {
+        // Playback time drives the movement. Keep the real highlighted word in view.
+        var highlightDistance = scrollState.width * lyricLayout.pixelProgress(progress);
         scrollState.offset = Math.max(scrollState.end, Math.min(scrollState.start,
           Math.max(scrollState.start - highlightDistance,
             Math.min(scrollState.start + scrollState.clearWidth - highlightDistance, scrollState.offset))));
@@ -750,6 +751,7 @@
     }
     function applyState(next){
       next = next || {};
+      var nowMs = performance.now();
       var previous = state;
       var visibilityChanged = next.visibilityResetSerial != null && next.visibilityResetSerial !== state.visibilityResetSerial;
       var sentenceChanged = (next.lineKey != null && next.lineKey !== state.lineKey) ||
@@ -766,7 +768,7 @@
       if(visibilityChanged)line.classList.remove('in');
       applyColors(previous.colors, next.colors);
       if ('customFont' in next) applyCustomFontPayload(next.customFont);
-      applyDesktopPlayback(next.playback);
+      applyDesktopPlayback(next.playback, nowMs);
       applyDesktopBeatMapPayload(next);
       var motion = next.motion || {};
       if (motion.lyricGlow != null) state.lyricGlow = !!motion.lyricGlow;
@@ -780,12 +782,15 @@
         String(state.text == null ? 'Mineradio' : state.text).replace(/\s+/g, ' ').trim();
       baseFontSize = Math.round(58 * clamp(state.size, .72, 1.55, 1));
       state.progress = clamp(state.progress, 0, 1, 0);
-      state.scrollProgress = clamp(next.scrollProgress == null ? next.progress : next.scrollProgress, 0, 1, 0);
-      // Incoming progressSpan is the current line duration in seconds. Keep
-      // its full value for scroll; the existing highlight cap stays unchanged.
-      state.scrollSpan = clamp(next.progressSpan, .75, 86400, 4.8);
-      state.progressSpan = clamp(state.progressSpan, .75, 18, 4.8);
-      state.progressReceivedAt = performance.now();
+      var scrollProgress = next.scrollProgress ?? next.progress;
+      if (scrollProgress != null) {
+        state.scrollProgress = clamp(scrollProgress, 0, 1, 0);
+        state.progressReceivedAt = nowMs;
+      }
+      if (next.progressSpan != null) {
+        state.scrollSpan = clamp(next.progressSpan, 0, 86400, 4.8);
+        state.progressSpan = clamp(next.progressSpan, .75, 18, 4.8);
+      }
       if (resetProgress || !state.playing) displayedProgress = state.progress;
       state.fontWeight = Math.round(clamp(state.fontWeight, 500, 900, 900) / 50) * 50;
       state.letterSpacing = clamp(state.letterSpacing, -.04, .18, 0);
@@ -824,29 +829,33 @@
         setRootVar('--lyric-scroll-x', '0px');
         line.setAttribute('data-text', text);
         layoutKey = '';
-        if(!visibilityChanged)replayLineAnimation();
+        if (!visibilityChanged) {
+          var entranceMs = state.scrollSpan > 0 ? Math.min(820, Math.round(state.scrollSpan * 280 / state.playbackRate)) : 820;
+          setRootVar('--lyric-enter-duration', entranceMs + 'ms');
+          replayLineAnimation();
+        }
       }
       if ((fontChanged || textChanged) && lyricLayout.update(text,typographyOptions(state))) layoutKey='';
       var styleChanged = state.size !== previous.size || state.fontWeight !== previous.fontWeight ||
         state.letterSpacing !== previous.letterSpacing || state.lineHeight !== previous.lineHeight ||
-        state.highlightFollow !== previous.highlightFollow;
+        state.highlightFollow !== previous.highlightFollow || state.scrollSpan !== previous.scrollSpan;
       if (fontChanged || textChanged || sentenceChanged || styleChanged || visibilityChanged) fitLyricText(visibilityChanged);
       // Apply the sampled position before acknowledging a newly shown view.
       if (resetProgress || !state.playing || textChanged || styleChanged) {
         setHighlightProgress(displayedProgress);
-        updateLyricScroll(performance.now(), displayedProgress);
+        updateLyricScroll(nowMs, displayedProgress);
       }
       if ((previous.playing && !state.playing) || (!state.enabled && previous.enabled)) {
         live = {solar:0,beat:0,bass:0,scale:1,lift:0};
         stage.style.removeProperty('transform');
-        setRootVar('--lyric-css-beat-glow', '0px');
+        applyLyricLighting(0, 0);
       }
       scheduleNextDraw();
     }
-    function currentDisplayProgress() {
+    function currentDisplayProgress(nowMs) {
       var target = clamp(state.progress, 0, 1, 0);
       if (state.playing && state.progressSpan > 0 && state.progressMode !== 'word') {
-        target += Math.max(0, performance.now() - (state.progressReceivedAt || performance.now())) / (state.progressSpan * 1000);
+        target += Math.max(0, nowMs - state.progressReceivedAt) * state.playbackRate / (state.progressSpan * 1000);
       }
       target = clamp(target, 0, 1, target);
       if (!state.playing) { displayedProgress = target; return target; }
@@ -883,6 +892,12 @@
       live.beat += (beatTarget - live.beat) * (beatTarget > live.beat ? .62 : .18);
       live.bass += (bassDrive - live.bass) * .22;
     }
+    function applyLyricLighting(beat, solar) {
+      var glow = state.lyricGlow ? clamp(beat * 8 + solar * 3, 0, 12, 0) : 0;
+      setRootVar('--lyric-css-beat-glow', Math.round(glow * 2) / 2 + 'px');
+      setRootVar('--lyric-brightness', (1.04 + beat * .12 + solar * .05).toFixed(2));
+      setRootVar('--lyric-saturation', (1.08 + beat * .10).toFixed(2));
+    }
     function applyStageMotion(now, drawEffect) {
       var cinemaBinding = state.cinema !== false;
       var motionBeat = cinemaBinding ? live.beat : 0;
@@ -892,7 +907,6 @@
       live.lift += (targetLift - live.lift) * (targetLift > live.lift ? .46 : .16);
       var scale = 1 + motionBeat * .115 + motionSolar * .034 + motionBass * .026;
       live.scale += (scale - live.scale) * (scale > live.scale ? .46 : .16);
-      if (!drawEffect) return;
       var floatY = Math.sin(now * 1.08) * -9.8 + Math.sin(now * 2.10 + .7) * 3.1;
       var floatX = Math.sin(now * .70 + .4) * 6.2 + Math.sin(now * 1.18 + 1.1) * 2.6;
       var bobY = floatY - live.lift;
@@ -900,8 +914,7 @@
       var rotX = Math.sin(now * .86 + .2) * 3.25 - motionBeat * .92;
       var rotY = Math.sin(now * .74 + 1.3) * -2.75 + motionBeat * .34;
       stage.style.transform = 'translate3d(' + bobX.toFixed(2) + 'px,' + bobY.toFixed(2) + 'px,0) rotateX(' + rotX.toFixed(3) + 'deg) rotateY(' + rotY.toFixed(3) + 'deg) scale(' + live.scale.toFixed(4) + ')';
-      var glow = state.lyricGlow ? clamp(motionBeat * 8 + motionSolar * 3, 0, 12, 0) : 0;
-      setRootVar('--lyric-css-beat-glow', Math.round(glow) + 'px');
+      if (drawEffect) applyLyricLighting(motionBeat, motionSolar);
     }
     var observationAt = 0, observedFrames = [], observationPrevious = 0, nextDrawAt = 0, observationReset = null, observationVisibility = null;
     var frameRequest = 0, frameTimer = 0, effectAt = 0;
@@ -945,7 +958,7 @@
       lastDrawAt = nowMs;
       if (state.playing) {
         var now = nowMs * .001;
-        var progress = state.highlightFollow ? currentDisplayProgress() : 0;
+        var progress = state.highlightFollow ? currentDisplayProgress(nowMs) : 0;
         if (state.highlightFollow) setHighlightProgress(progress);
         var drawEffect = nowMs >= effectAt;
         if (drawEffect) effectAt = nowMs + 64;

@@ -255,15 +255,20 @@ function indexedLines(value) {
   if (cached && cached.source === value.lines) return cached.lines;
   const lines = (value.lines || []).filter(line => line && !line.fallback &&
     Number.isFinite(line.t) && !context.isNoLyricText(line.text));
-  const indexed = lines.map((line, index) => ({
-    line,
-    key: [index, line.t, line.text].join('|'),
-    span: Math.max(.75, (lines[index + 1]?.t || line.t + line.duration) - line.t),
-  }));
+  const indexed = lines.map((line, index) => {
+    const end = line.words?.length
+      ? line.words.reduce((last, word) => Math.max(last, word.t + word.d), line.t)
+      : line.t + (line.duration || 4.8);
+    return {
+      line,
+      key: [index, line.t, line.text].join('|'),
+      scrollEnd: Math.min(end, lines[index + 1]?.t ?? end),
+    };
+  });
   lyricIndex.set(value, { source: value.lines, lines: indexed });
   return indexed;
 }
-function locate(value, time) {
+function locate(value, time, trackDuration = Infinity) {
   const lines = indexedLines(value);
   // Parsed timestamps are ordered. Select the last entry at an equal timestamp.
   let start = 0;
@@ -285,7 +290,8 @@ function locate(value, time) {
       scrollProgress: 0,
       progressSpan: 4.8,
     };
-  const { line, key, span } = lines[index];
+  const { line, key, scrollEnd } = lines[index];
+  const span = Math.max(.001, Math.min(scrollEnd, trackDuration) - line.t);
   // LRC has no word timing: deliberately disable word/highlight interpolation.
   let progress = 0;
   if (line.words?.length) {

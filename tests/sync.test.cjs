@@ -138,6 +138,18 @@ test("YRC from original parser retains real words; instrumental clears previous 
   assert.equal(none.usableLyric, false);
   assert.equal(locate(none, 10).highlightFollow, false);
 });
+test('scroll windows use the next timestamp, sung word end, or track end', () => {
+  const rapid = parse({lyric:'[00:00.00]一段很长的歌词\n[00:00.38]下一句'});
+  assert.equal(locate(rapid, .35).progressSpan, .38);
+  assert.ok(locate(rapid, .35).scrollProgress > .9);
+  const gap = parse({yrc:'[1000,6000](1000,200,0)first (4900,100,0)last\n[7500,500](7500,500,0)next'});
+  assert.equal(locate(gap, 3).progressSpan, 4);
+  assert.equal(locate(gap, 3).progress, locate(gap, 4).progress);
+  assert.equal(locate(gap, 5).scrollProgress, 1);
+  const ending = parse({lyric:'[00:08.00]最后一句'});
+  assert.equal(locate(ending, 8.4, 8.5).progressSpan, .5);
+  assert.ok(locate(ending, 8.4, 8.5).scrollProgress > .78);
+});
 test("async lyrics are bound to current track, including no lyrics and request failure", async () => {
   let finish;
   const l = new Lyrics((track) =>
@@ -162,7 +174,9 @@ test("instrumental response with timed empty credits clears lyric text; later su
   const actualShape = parse({lrc:{lyric:"[00:00.00] 作词 : 无\n[00:01.00] 作曲 : 无\n[00:05.00]纯音乐，请欣赏\n"}});
   assert.equal(actualShape.usableLyric,false);
   assert.deepEqual(actualShape.lines,[]);
-  assert.equal(locate({...actualShape,status:"无歌词 / 纯音乐"},10).text,"无歌词 / 纯音乐");
+  const frame = locate({...actualShape,status:"无歌词 / 纯音乐"},10);
+  assert.equal(frame.phase,"empty");
+  assert.equal(frame.text,"");
   assert.equal(parse({lyric:"[00:10.00]作词：向前走"}).usableLyric,true);
   assert.equal(parse({nolyric:true,lyric:"[00:00.00]outdated response text"}).usableLyric,false);
 });
