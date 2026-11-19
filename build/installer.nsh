@@ -112,13 +112,48 @@
     MessageBox MB_OK|MB_ICONEXCLAMATION "无法确认桌面歌词是否仍在运行。请关闭桌面歌词后重试；没有强制结束任何程序。"
     Abort
   ${EndIf}
+  !ifndef BUILD_UNINSTALLER
+    ${IfNot} ${Silent}
+    ${AndIfNot} ${isUpdated}
+      InitPluginsDir
+      SetOutPath $PLUGINSDIR
+      File /oname=connection-wizard.exe "${MINERADIO_CONNECTION_HELPER}"
+      ClearErrors
+      ExecWait '"$PLUGINSDIR\connection-wizard.exe" "$PLUGINSDIR\mineradio-selection.json" "$INSTDIR\."' $R0
+      ${If} ${Errors}
+        MessageBox MB_OK|MB_ICONEXCLAMATION "未能打开网易云插件安装向导。"
+        SetErrorLevel 1
+        Quit
+      ${ElseIf} $R0 != 0
+        SetErrorLevel 2
+        Quit
+      ${EndIf}
+    ${EndIf}
+  !endif
 !macroend
 
 !macro customInstall
   ; This program-specific receipt is not a user preference or plugin profile.
   FileOpen $R0 "$INSTDIR\mineradio-installation.txt" w
-  FileWrite $R0 "Mineradio.DesktopLyrics$\r$\n${VERSION}$\r$\nInstalled by the per-user candidate Setup.$\r$\nPreferences: %APPDATA%\MineradioExternalLyrics (retained on uninstall).$\r$\n"
+  FileWrite $R0 "Mineradio.DesktopLyrics$\r$\n${VERSION}$\r$\nInstalled by the per-user Setup.$\r$\nPreferences: %APPDATA%\MineradioExternalLyrics (retained on uninstall).$\r$\n"
   FileClose $R0
+  ${If} ${FileExists} "$PLUGINSDIR\mineradio-selection.json"
+    nsExec::ExecToStack '"$INSTDIR\resources\node.exe" --no-global-search-paths "$INSTDIR\resources\app\src\desktop-setup.cjs" "$PLUGINSDIR\mineradio-selection.json" "$PLUGINSDIR\mineradio-connection-error.txt"'
+    Pop $R0
+    Pop $R1
+    ${If} $R0 == 0
+      MessageBox MB_OK|MB_ICONINFORMATION "插件已配置。若网易云已打开，请从托盘退出后重开。播放歌曲即可确认歌词连接。"
+    ${Else}
+      StrCpy $R1 "可从歌词托盘打开网易云连接设置。"
+      ${If} ${FileExists} "$PLUGINSDIR\mineradio-connection-error.txt"
+        FileOpen $R2 "$PLUGINSDIR\mineradio-connection-error.txt" r
+        FileSeek $R2 2 SET
+        FileReadUTF16LE $R2 $R1
+        FileClose $R2
+      ${EndIf}
+      MessageBox MB_OK|MB_ICONEXCLAMATION "桌面歌词已安装，内置 Bridge 待配置。$\r$\n$R1"
+    ${EndIf}
+  ${EndIf}
 !macroend
 
 !macro customRemoveFiles

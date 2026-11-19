@@ -5,7 +5,8 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const zlib=require('node:zlib');
 const {execFile}=require('node:child_process');
-const KNOWN_LOADER='a7c77af418d7940e63faa58ea036fba1f4baad497947109ea52ed78c8e86608f';
+const {clientVersions,betterNcm,infLink}=require('../build/connection-components.json');
+const bridgeVersion=require('../plugins/MineradioBridge/manifest.json').version;
 const BRIDGE_FILES=['manifest.json','index.js','header-compat.js','pcm-freshness.js','pcm-analyzer.js'];
 function exists(file){try{return fs.statSync(file).isFile();}catch{return false;}}
 function json(file){return JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));}
@@ -74,7 +75,7 @@ function safeSave(file,value){
     fs.unlinkSync(temporary);
   }
 }
-async function inspect(config,context){
+async function inspect(config,context,verifyVersions=true){
   if(!context.executable(config.clientExecutable)){
     let state;
     try{state=await context.windowsState();}catch(error){context.record({type:'connection-discovery-error',error:error.message});}
@@ -83,12 +84,12 @@ async function inspect(config,context){
     config.clientExecutable=values.find(context.executable)||config.clientExecutable;
   }
   const clientFound=context.executable(config.clientExecutable);
-  const version=clientFound?await fileVersion(config.clientExecutable,context.powershell):'未找到';
+  const version=clientFound&&verifyVersions?await fileVersion(config.clientExecutable,context.powershell):null;
   const arch=clientFound?architecture(config.clientExecutable):'未知';
   const loader=clientFound?path.join(path.dirname(config.clientExecutable),'msimg32.dll'):null;
   const loaderFound=!!loader&&exists(loader);
   let loaderHash=null;
-  if(loaderFound)try{loaderHash=crypto.createHash('sha256').update(fs.readFileSync(loader)).digest('hex');}
+  if(loaderFound&&verifyVersions)try{loaderHash=crypto.createHash('sha256').update(fs.readFileSync(loader)).digest('hex');}
   catch(error){context.record({type:'connection-loader-read-error',error:error.message});}
   const manifests=pluginManifests(config.profile);
   const inflink=manifests.find(value=>/^InfLink(?:-rs|rs)$/i.test(value.manifest.name));
@@ -98,19 +99,18 @@ async function inspect(config,context){
   const bridgeFiles=bridgeDirectory?BRIDGE_FILES.every(name=>exists(path.join(bridgeDirectory,name))):false;
   let writable=false;if(bridgeFiles)try{fs.accessSync(bridgeDirectory,fs.constants.W_OK);writable=true;}catch{}
   const status={clientExecutable:config.clientExecutable||null,clientFound,version,architecture:arch,loaderFound,loaderHash,
-    loaderKnown:loaderHash===KNOWN_LOADER,profile:config.profile||null,inflinkVersion:pluginVersion(inflink),bridgeVersion:bridge?.manifest.version||null,
+    loaderKnown:loaderHash===betterNcm.sha256,profile:config.profile||null,inflinkVersion:pluginVersion(inflink),bridgeVersion:bridge?.manifest.version||null,
     bridgeDirectory,bridgeArchive:!!bridge&&!bridgeDirectory,bridgeFiles,writable,filesReady:clientFound&&arch==='x64'&&loaderFound&&!!pluginVersion(inflink)&&bridgeFiles&&writable};
-  status.compatibilityKnown=status.filesReady&&version==='3.1.42.205594'&&status.loaderKnown&&status.inflinkVersion==='3.4.0'&&status.bridgeVersion==='0.4.3';
-  status.fingerprint=crypto.createHash('sha256').update(JSON.stringify(status)).digest('hex');
+  status.compatibilityKnown=status.filesReady&&bridgeDeploymentAllowed(status)&&status.bridgeVersion===bridgeVersion;
   return status;
 }
 function pluginVersion(value){return typeof value?.manifest.version==='string'?value.manifest.version:null;}
 function bridgeDeploymentAllowed(status){
-  return status.clientFound&&status.architecture==='x64'&&status.version==='3.1.42.205594'&&
-    status.loaderKnown&&status.inflinkVersion==='3.4.0'&&!!status.profile&&!status.bridgeArchive;
+  return status.clientFound&&status.architecture==='x64'&&clientVersions.includes(status.version)&&
+    status.loaderKnown&&status.inflinkVersion===infLink.version&&!!status.profile&&!status.bridgeArchive;
 }
 function deployBridge(config,status,context){
-  if(!bridgeDeploymentAllowed(status))throw Error('请先选择已支持的原版网易云及实际 profile，并配置 BetterNCM 1.3.4 x64 / InfLink 3.4.0。未知版本或 DLL 不会被修改。');
+  if(!bridgeDeploymentAllowed(status))throw Error('请先确认网易云 x64 版本（'+clientVersions.join(' 或 ')+'）、BetterNCM '+betterNcm.version+' 和 InfLink-rs '+infLink.version+'。');
   const source=path.join(context.app.getAppPath(),'plugins/MineradioBridge');
   const profile=fs.realpathSync.native(config.profile);
   const target=status.bridgeDirectory?path.resolve(status.bridgeDirectory):path.join(profile,'plugins_dev','MineradioBridge');
@@ -156,28 +156,28 @@ function details(config,status){
   return [
     '歌词程序已安装，不等于网易云插件已连接。以下仅检查本机文件，真正连接以后续收到的播放数据为准。',
     '网易云：'+(status.clientExecutable||'未找到，请选择原版 cloudmusic.exe'),
-    '客户端版本／架构：'+status.version+' / '+status.architecture,
+    '客户端版本／架构：'+(status.version||'未找到')+' / '+status.architecture,
     'BetterNCM 加载器：'+(!status.loaderFound?'未找到 msimg32.dll':status.loaderKnown?'找到已记录的 1.3.4 x64 文件（尚未确认进程已加载）':'存在未知 msimg32.dll，不覆盖、不改动'),
     '插件目录：'+(status.profile||'尚未选择'),
     'InfLink-rs：'+(status.inflinkVersion?'manifest '+status.inflinkVersion+'（仅文件检查）':'未找到可读 manifest，未确认安装'),
     'MineradioBridge：'+(status.bridgeVersion?'manifest '+status.bridgeVersion:'未找到')+(status.bridgeFiles?'；必要文件齐全':'；必要文件未齐')+(status.bridgeFiles&&!status.writable?'；目录不可写':''),
-    status.compatibilityKnown?'版本组合与已记录范围一致，仍需用户实际连接验收。':'当前记录仅验证 Windows 11 x64 / 网易云 3.1.42.205594 / BetterNCM 1.3.4 / InfLink 3.4.0 / Bridge 0.4.3；其他组合尚未验证。',
+    status.compatibilityKnown?'已找到匹配的组件。打开网易云后，连接状态会随播放数据更新。':'当前可配置的网易云 x64 版本：'+clientVersions.join('、')+'。',
     '内置 Bridge 可在确认后配置到已有 profile；仅写本项目文件并备份，不改 DLL 或其他插件。第三方依赖缺失时请查看安装说明。',
     ...(config.warnings||[]),
   ].join('\n');
 }
 function applyStatus(config,status){
   config.setupStatus=status;
-  config.bridgeConfig=status.bridgeFiles&&status.writable?path.join(status.bridgeDirectory,'connection.json'):path.join(config.userDirectory,'runtime/pending-bridge/connection.json');
+  config.bridgeConfig=status.filesReady?path.join(status.bridgeDirectory,'connection.json'):path.join(config.userDirectory,'runtime/pending-bridge/connection.json');
   config.autoStartClient=config.autoStartClientPreference&&status.filesReady&&!process.argv.includes('--lyrics-only');
   return config;
 }
 async function prepare(config,context){
   const {app,dialog,record,shell}=context;
-  let status=await inspect(config,context);
-  applyStatus(config,status);
   const force=context.force===true||process.argv.includes('--configure-connection');
-  if(!force&&status.filesReady&&config.acknowledgedFingerprint===status.fingerprint){record({type:'connection-file-check',status});return config;}
+  let status=await inspect(config,context,force);
+  applyStatus(config,status);
+  if(!force){record({type:'connection-file-check',status});return config;}
   while(true){
     const choice=await dialog.showMessageBox({type:status.filesReady?'info':'warning',title:'Mineradio · 网易云连接设置',
       message:status.filesReady?'插件文件已找到，连接仍待播放数据确认':'先确认网易云与插件，再开始使用',detail:details(config,status),
@@ -200,7 +200,6 @@ async function prepare(config,context){
     if(choice.response===4){
       try{
         if(status.bridgeArchive)throw Error('现有 MineradioBridge 是归档插件，无法直接保存会话文件。不会再复制第二份桥接，请先备份并按连接说明改用单一目录形式。');
-        if(!bridgeDeploymentAllowed(status))throw Error('尚未满足已记录的兼容条件：网易云 3.1.42.205594 x64、已知 BetterNCM 1.3.4 x64、InfLink 3.4.0 及其实际 profile。请先查看连接说明，不会强行修改。');
         const consent=await dialog.showMessageBox({type:'question',title:'配置内置 MineradioBridge',message:'将内置桥接配置到所选 profile？',detail:'目标：'+(status.bridgeDirectory||path.join(config.profile,'plugins_dev/MineradioBridge'))+'\n仅更新本项目五个源文件，匹配文件不重复复制。旧文件备份到：'+path.join(config.userDirectory,'bridge-backups')+'\n保留 connection.json、账号及其他插件。不会退出网易云；如有更新，请之后自行从其托盘正常退出并重新打开。',buttons:['配置 Bridge','取消'],defaultId:1,cancelId:1,noLink:true});
         if(consent.response!==0)continue;
         const deployed=deployBridge(config,status,context);
@@ -221,11 +220,36 @@ async function prepare(config,context){
       continue;
     }
     try{
-      safeSave(config.userConfigFile,{version:1,clientExecutable:config.clientExecutable||'',profile:config.profile||'',autoStartClient:config.autoStartClientPreference,acknowledgedFingerprint:status.fingerprint});
-      config.acknowledgedFingerprint=status.fingerprint;
+      saveConnection(config);
       record({type:'connection-setup-saved',configFile:config.userConfigFile,status});
       return config;
     }catch(error){record({type:'connection-config-save-error',error:error.message});await dialog.showMessageBox({type:'error',title:'连接设置保存失败',message:'无法保存连接路径，原配置保留。',detail:error.message,buttons:['返回']});}
   }
+}
+function saveConnection(config) {
+  safeSave(config.userConfigFile, {version:1,clientExecutable:config.clientExecutable||'',
+    profile:config.profile||'',autoStartClient:config.autoStartClientPreference});
+}
+
+async function finishInstallerSetup(selectionFile) {
+  const {powershell,executable,resolveConfig}=require('./desktop-startup.cjs');
+  const selection=json(selectionFile);
+  const app={getAppPath:()=>path.join(__dirname,'..'),getPath:name=>name==='exe'
+    ?path.resolve(__dirname,'../../../MineradioLyrics.exe'):process.env.APPDATA};
+  const config={...resolveConfig(app),clientExecutable:selection.clientExecutable,profile:selection.profile};
+  const context={powershell,executable,record:()=>{},app};
+  if(!executable(config.clientExecutable))throw Error('找不到向导中选定的 cloudmusic.exe。');
+  const status=await inspect(config,context);
+  deployBridge(config,status,context);
+  saveConnection(config);
+}
+
+if (require.main===module) {
+  const [selectionFile,errorFile]=process.argv.slice(2);
+  void finishInstallerSetup(selectionFile).catch(error=>{
+    if(errorFile)fs.writeFileSync(errorFile,'\uFEFF'+error.message,'utf16le');
+    else console.error(error.message);
+    process.exitCode=1;
+  });
 }
 module.exports={prepare};

@@ -1,6 +1,6 @@
-# 1.1.0 候选版的许可与第三方组件
+# 1.1.0 的许可与第三方组件
 
-此文件记录 `1.1.0` 候选包的来源与分发范围。完整许可随各组件附带。
+此文件记录 `1.1.0` 的来源与分发范围。完整许可随各组件附带。
 
 ## Mineradio 改造关系
 
@@ -30,9 +30,9 @@ Instrument Sans 是应用界面自带字体，与用户自行选择的系统字�
 | 组件 | 固定参考与许可 | 本轮处理 |
 | --- | --- | --- |
 | 网易云音乐 Windows 客户端 | 官方客户端，本项目不授予其分发权 | 不打包客户端本体、账号、Cookie、登录库、歌曲或副本 |
-| BetterNCM 1.3.4 | [上游发布](https://github.com/std-microblock/chromatic/releases/tag/1.3.4)，提交 `e89db61f1254554cf0e9dc5866bfd234c7814f15`；本地对应 LICENSE 为 GPLv3 | 用户按实际已有加载器与备份手动配置，不在安装时覆盖未知 DLL |
-| InfLink-rs 3.4.0 | apoint123；[发布](https://github.com/apoint123/inflink-rs/releases/tag/v3.4.0)，提交 `e4ad4946ce24f63b99082fe8be3f30ca92d4428e`；GPL-3.0-only | 不捆绑插件 DLL；复用已有兼容版本或用户按上游自行安装 |
-| MineradioBridge 0.4.3 | 本项目自有 GPL-3.0-only 源码 | 程序资源中提供 5 个桥接源文件，首次连接经确认部署，另给带 GPL／NOTICE 的单独部署／恢复 ZIP，不含认证会话 |
+| BetterNCM 1.3.4 | [上游发布](https://github.com/std-microblock/chromatic/releases/tag/1.3.4)，提交 `e89db61f1254554cf0e9dc5866bfd234c7814f15`；本地对应 LICENSE 为 GPLv3 | 安装时复用已匹配的加载器，或经确认从上游下载并校验 |
+| InfLink-rs 3.4.0 | apoint123；[发布](https://github.com/apoint123/inflink-rs/releases/tag/v3.4.0)，提交 `e4ad4946ce24f63b99082fe8be3f30ca92d4428e`；GPL-3.0-only | 安装时复用匹配的插件，或经确认下载并校验上游 `.plugin` |
+| MineradioBridge 0.4.3 | 本项目自有 GPL-3.0-only 源码 | 程序内置 5 个源文件，由安装向导或托盘设置部署，另外提供带 GPL／NOTICE 的恢复 ZIP |
 
 先前只读参考过 Widdit/now-playing-service 等项目；没有因此把其整套服务或二进制加入本候选运行时。
 

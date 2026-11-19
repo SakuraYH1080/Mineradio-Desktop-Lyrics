@@ -104,7 +104,7 @@ let sentWire;
 const staticPresentationKeys = [
   'enabled', 'opacity', 'size', 'cinema', 'frameRate', 'colors', 'fontFamily', 'fontFamilies',
   'lyricLanguage', 'fontContextLanguage', 'clickThrough', 'text',
-  'lineKey', 'trackGeneration', 'highlightFollow', 'allowSyntheticBeat',
+  'lineKey', 'trackGeneration', 'highlightFollow', 'allowSyntheticBeat', 'paused',
   'progressResetSerial', 'visibilityResetSerial', 'beatMap', 'beatMapKey',
 ];
 let buffer = "";
@@ -325,6 +325,7 @@ function tick() {
     progressResetReason: s.resetReason,
     trackGeneration: s.key,
     playing: s.playing,
+    paused: s.quality === 'confirmed-paused-anchor',
     playback: { time: s.position, duration: s.duration, rate: s.rate },
     motion: motion({ demo, playing: s.playing, time: s.position, audio: enableAudio ? timeline.sample?.audio : null }),
     allowSyntheticBeat: demo,

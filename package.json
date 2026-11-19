@@ -1,6 +1,6 @@
 {
   "name": "mineradio-external-lyrics-phase1",
-  "version": "1.1.0-rc.5",
+  "version": "1.1.0",
   "private": true,
   "license": "GPL-3.0-only",
   "main": "src/main.cjs",

@@ -47,6 +47,7 @@
     visibilityReady: (...args) => webview.postMessage({ channel: 'mineradio-visibility-ready', args }),
     reportDisplay: (...args) => webview.postMessage({ channel: 'mineradio-display-observation', args }),
     onLyricsState: listener => subscribe(lyrics + 'state', listener),
+    onLockedHover: listener => subscribe(lyrics + 'locked-hover', listener),
     onWallpaperState: listener => subscribe('mineradio-wallpaper-state', listener),
     setLyricsDrag: active => invoke(lyrics + 'set-dragging', active),
     setLyricsHotBounds: bounds => invoke(lyrics + 'set-hot-bounds', bounds),

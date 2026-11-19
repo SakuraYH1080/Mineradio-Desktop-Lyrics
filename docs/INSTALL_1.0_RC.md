@@ -4,33 +4,34 @@
 
 网易云官方 Windows 客户端负责选歌和播放。Mineradio 提供独立桌面歌词、同步、长句滚动、真实 PCM 动效及设置功能。
 
-1.1.0 候选版使用系统共享的 Microsoft Edge WebView2 Evergreen Runtime。缺少时，启动程序会提供微软官方下载入口。歌词后端随包提供，可直接从 GUI EXE 启动。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
+1.1.0 使用系统共享的 Microsoft Edge WebView2 Evergreen Runtime。缺少时，启动程序会提供微软官方下载入口。歌词后端随包提供，可直接从 GUI EXE 启动。[WebView2 下载](https://developer.microsoft.com/microsoft-edge/webview2/#download)
 
-**已安装歌词程序，不等于网易云插件连接就绪。** 网易云客户端、BetterNCM 和 InfLink 不随 Setup 分发。安装器不会复制第二套网易云、改账号、下载音乐、覆盖未知 DLL、修改其他插件或新增开机启动项。
+安装向导可为受支持的原版网易云配置 BetterNCM、InfLink-rs 和内置 MineradioBridge。第三方组件按需从上游发布页取得，使用固定版本与 SHA-256 校验。
 
 ## 1. 安装
 
 1. 核对附件中的 `SHA256SUMS.txt`，确认下载文件与交付校验值一致。
-2. 运行 Windows x64 的 `Setup.exe`。安装面向当前 Windows 用户，可在向导中选择目录。
-3. 完成后手动打开桌面或开始菜单的 **Mineradio 桌面歌词**。它直接运行 `MineradioLyrics.exe`，没有 CMD／PowerShell／npm 启动中转。
-4. 当前未配置插件时，按下面的首次连接说明处理；不必重新安装歌词程序。
+2. 运行 x64 的 `WebSetup.exe` 或完整的 `Setup.exe`，选择歌词安装目录。若要升级，请先从托盘退出旧版歌词程序。
+3. 核对检测到的原版 `cloudmusic.exe`。在 **BetterNCM 插件目录** 中选择文件夹，例如 `D:\BetterNCM`。安装插件或切换目录前，先从网易云托盘退出，然后点 **配置并下载安装** 或 **配置并继续**。向导会把选择写入当前 Windows 用户的 `BETTERNCM_PROFILE`，网易云重开后从所选目录加载插件。[BetterNCM 的插件目录说明](https://github.com/std-microblock/chromatic/wiki/%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E#修改插件数据位置)
+4. 向导复用匹配的组件；缺失时从上游下载 BetterNCM 1.3.4 和 InfLink-rs 3.4.0。网络安装器随后从对应 GitHub 发布附件下载并校验完整包。同目录存在一致的完整安装包时，网络安装器会直接使用它。
+5. 安装器部署内置 Bridge 并保存连接。若网易云已打开，请从托盘退出后重开。播放歌曲后，从桌面或开始菜单打开 **Mineradio 桌面歌词**。
 
-安装结束后，从桌面或开始菜单启动。
+如果当前无法配置插件，可在安装向导选 **仅安装歌词** 或 **稍后配置**。歌词会等待连接，可以从托盘补配或重新运行安装向导。若 Windows 限制写入网易云或 BetterNCM 的安装目录，可按对应上游安装流程准备组件后再继续。
 
-rc.5 预发布安装包未签名。可对照 `SHA256SUMS.txt` 核对下载文件，Windows 可能显示未知发布者或 SmartScreen 提示。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
+未签名的安装包可能触发 Windows SmartScreen 提示。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
-## 2. 首次连接检查
+## 2. 手动检查与恢复连接
 
-首次运行的连接检查显示检测到的官方客户端实际路径、文件版本与架构，以及 BetterNCM 加载器、InfLink 和 MineradioBridge 的文件／版本状态。DLL 存在或哈希已知，只能说明文件检查结果，不能代替插件实际加载或歌曲时间轴验证。
+从歌词托盘打开 **网易云连接设置**，可以查看客户端实际路径、文件版本与架构，以及 BetterNCM 加载器、InfLink-rs 和 MineradioBridge 的文件状态。该窗口从托盘手动打开，日常启动歌词时直接显示播放或等待状态。
 
 - **选择网易云**：选择自己正在使用的官方 `cloudmusic.exe`。路径可包含中文或空格，不需要迁移客户端。
 - **选择插件目录**：选择 BetterNCM 实际 profile 根目录，根目录下应有 `plugins_dev`；不要误选网易云账号数据目录或单个插件文件夹。
 - **查看连接说明**：打开随程序分发的本地说明。
 - **配置／更新内置 Bridge**：受支持的第三方依赖就绪后，明确确认目标，只部署随 EXE 内置的本项目五个文件；已有文件匹配时不重复复制。
-- **第三方依赖下载**：打开固定 BetterNCM 1.3.4 或 InfLink-rs 3.4.0 官方发布页；缺项由用户按上游说明准备，不输入令牌或命令。
-- **保存并继续**：保存本机连接路径。缺依赖时只启动歌词窗口等待，不会伪称已连接或自动改写第三方插件。
+- **第三方依赖下载**：打开 BetterNCM 1.3.4 或 InfLink-rs 3.4.0 的上游发布页。
+- **保存并继续／仅启动歌词等待**：保存本机连接路径并打开桌面歌词。
 
-路径保存到 `%APPDATA%\MineradioExternalLyrics\desktop-connection.json`，不在安装目录存账号信息或认证令牌。依赖缺失时，下次重新运行会继续显示检查；依赖文件齐全且配置指纹不变后可以正常进入。真正连接成功还需要官方客户端加载对应插件并产生有效状态。
+连接路径保存在 `%APPDATA%\MineradioExternalLyrics\desktop-connection.json`。网易云加载对应插件并发出有效播放数据后，歌词才会显示连接成功。
 
 ### 已有兼容插件的用户
 
@@ -38,15 +39,9 @@ rc.5 预发布安装包未签名。可对照 `SHA256SUMS.txt` 核对下载文件
 
 ### 尚未配置插件的用户
 
-先核对兼容范围。修改任何插件前由用户自己退出网易云与歌词，备份将修改的原加载器及对应插件文件；账号与音乐目录不需要迁移。
+优先使用安装向导。若向导检测到其他加载器，或有多个 InfLink-rs，请按上游说明整理已有插件后重试。便携版用户可以按上游说明安装这两项，随后从歌词托盘打开连接设置并点 **配置／更新内置 Bridge**。[BetterNCM 1.3.4](https://github.com/std-microblock/chromatic/releases/tag/1.3.4) · [InfLink-rs 3.4.0](https://github.com/apoint123/inflink-rs/releases/tag/v3.4.0)
 
-1. 从 BetterNCM 上游取得匹配架构的组件，当前既有验证使用 **BetterNCM 1.3.4 x64**。若网易云目录已有来源未知的 `msimg32.dll`，先查清来源和备份，不要直接覆盖。Setup 不执行此步骤。
-2. 从 InfLink-rs 上游取得 **3.4.0**，按其插件格式放入已有 BetterNCM profile；本项目历史使用目录 `plugins_dev\InfLinkrs`。不要用“最新版”替换固定版本试错。
-3. 在首次连接向导选择实际客户端与 profile，点击“配置／更新内置 Bridge”。只有已记录的客户端版本、架构、加载器哈希和 InfLink 版本匹配时才允许部署；其他组合不会强行写入。目标默认是 `<实际 profile>\plugins_dev\MineradioBridge`，已有本项目目录时复用其位置。仅写 manifest/index/header-compat/pcm-freshness/pcm-analyzer 五个文件，保持其他文件与 `connection.json` 不变，匹配内容不重写。部署前的五个旧文件单独备份到 `%APPDATA%\MineradioExternalLyrics\bridge-backups`，失败尝试恢复已写文件并记录错误。Setup 已含 Bridge，无需单独下载 ZIP。
-4. 桥接有变化时，请自己从网易云托盘正常退出并重开，使其加载；程序不会强制中断音乐。独立 Bridge ZIP 只用于单独部署／恢复。
-5. 打开原版网易云，再打开歌词程序，在检查窗口选择实际客户端和 profile。是否登录、验证码与歌曲权限由用户本人处理。
-
-上游来源：[BetterNCM 1.3.4](https://github.com/std-microblock/chromatic/releases/tag/1.3.4)、[InfLink-rs 3.4.0](https://github.com/apoint123/inflink-rs/releases/tag/v3.4.0)。本包没有捆绑上述二进制。
+内置 Bridge 默认写入 `<实际 profile>\plugins_dev\MineradioBridge`，已有本项目目录时复用其位置。更新时在 `%APPDATA%\MineradioExternalLyrics\bridge-backups` 备份旧的桥接源文件。独立 Bridge ZIP 用于单独部署或恢复。
 
 ## 3. 日常操作
 
@@ -72,7 +67,7 @@ rc.5 预发布安装包未签名。可对照 `SHA256SUMS.txt` 核对下载文件
 
 在 Windows“已安装的应用”中卸载 Mineradio 桌面歌词。卸载器仅处理本程序登记的安装文件及它建立的入口；保留 `%APPDATA%\MineradioExternalLyrics` 中的用户设置、连接配置、位置记录与日志。不会清空网易云、歌曲、插件 profile、下载目录或私人备份。
 
-BetterNCM 与 InfLink 由用户另行配置；自有 Bridge 经向导确认部署。卸载歌词程序不会删除或擅自还原这些 profile 文件。恢复自有桥接时，用 bridge-backups 中对应时间目录内的 deployment.json 核对目标，再仅还原其中列明的本项目文件；不要还原或清空整个 profile。若需要撤销第三方加载器，请按用户自己保存的备份、已确认的目标文件和上游说明单独恢复，不删除整个 profile。
+卸载歌词程序后，BetterNCM、InfLink-rs 和 Bridge 仍可由插件管理流程处理。恢复 Bridge 时，用 `bridge-backups` 中对应时间目录内的 `deployment.json` 核对目标，再还原其中列明的本项目文件。撤销第三方加载器请参照其上游说明。
 
 回退歌词版本时先退出歌词，保留用户数据，安装已有旧版本或打开此前保留的手工试用入口。不要用旧源码包覆盖当前用户配置；也不要把历史客户端副本重新建回来。
 
@@ -81,12 +76,10 @@ BetterNCM 与 InfLink 由用户另行配置；自有 Bridge 经向导确认部�
 | 组件 | 既有记录 |
 | --- | --- |
 | Windows | Windows 11 x64；本机记录为 Pro 26H2、26300.9711，不代表所有 Windows 版本通过 |
-| 网易云官方 Windows 客户端 | 3.1.42.205594 x64，原安装方案 |
+| 网易云官方 Windows 客户端 | 3.1.42.205594、3.1.43.205627 x64 |
 | BetterNCM | 1.3.4 x64 |
 | InfLink-rs | 3.4.0 |
 | MineradioBridge | 0.4.3，保留 header-compat 与 PCM 新鲜度修补 |
-| 界面运行时 | 1.1.0 候选版使用 Microsoft Edge WebView2 Evergreen Runtime |
+| 界面运行时 | Microsoft Edge WebView2 Evergreen Runtime |
 
-现有在线歌词接口和音源权限会影响歌词与 PCM 可用性。SDK 某些音源不提供可靠原生 PCM PTS，桥接沿用带质量标记的新鲜度处理，不能将回调接收时间当作精确声学采样时间。没有为新客户端版本做兼容承诺。
-
-候选版的安装、升级、卸载和真实网易云播放联动仍待验收。
+现有在线歌词接口和音源权限会影响歌词与 PCM 可用性。SDK 某些音源不提供可靠原生 PCM PTS，桥接沿用带质量标记的新鲜度处理，不能将回调接收时间当作精确声学采样时间。

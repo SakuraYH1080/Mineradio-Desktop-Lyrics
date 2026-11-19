@@ -18,6 +18,7 @@ IDENTITY = json.loads((ROOT / 'build/windows-app.json').read_text(encoding='utf-
 
 APP_FILES = (
     'build/windows-app.json',
+    'build/connection-components.json',
     'vendor/desktop-lyrics.html',
     'vendor/lyrics-fetch-parse.js',
     'public/desktop-typography.js',
@@ -221,7 +222,7 @@ def build(output):
         shutil.copy2(ROOT / source, output / destination)
 
     (output / 'desktop-launch.json').write_text(
-        '{"profile":"../betterncm","autoStartClient":true}\n', encoding='utf-8')
+        '{"autoStartClient":true}\n', encoding='utf-8')
     (output / '使用说明.txt').write_text(
         '双击 MineradioLyrics.exe 启动。界面使用系统的 Microsoft Edge WebView2 Evergreen Runtime。\n'
         '如缺少该运行时，请从程序提示的微软页面安装，然后重新启动。\n'

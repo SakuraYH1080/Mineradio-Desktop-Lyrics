@@ -27,6 +27,7 @@ struct View {
     int minimumWidth = 0;
     int minimumHeight = 0;
     bool locked = false;
+    bool lockedHover = false;
     bool middleDown = false;
     bool mouseTracked = false;
     bool loaded = false;
@@ -52,16 +53,30 @@ struct View {
         GetClientRect(window, &bounds);
         controller->put_Bounds(bounds);
     }
-    void show(bool visible) const {
+    void show(bool visible) {
         controller->put_IsVisible(visible);
         const int mode = overlay ? SW_SHOWNOACTIVATE : IsIconic(window) ? SW_RESTORE : SW_SHOW;
         ShowWindow(window, visible ? mode : SW_HIDE);
         if (overlay) {
             if (visible) SetTimer(window, mouseTimer, 24, nullptr);
-            else KillTimer(window, mouseTimer);
+            else {
+                KillTimer(window, mouseTimer);
+                setLockedHover(false);
+            }
         }
     }
+    void setLockedHover(bool inside) {
+        if (lockedHover == inside) return;
+        lockedHover = inside;
+        JsonArray args;
+        args.Append(JsonValue::CreateBooleanValue(inside));
+        JsonObject message;
+        message.SetNamedValue(L"channel", JsonValue::CreateStringValue(L"mineradio-desktop-lyrics-locked-hover"));
+        message.SetNamedValue(L"args", args);
+        page->PostWebMessageAsJson(message.Stringify().c_str());
+    }
     void setLocked(bool value) {
+        if (locked != value) setLockedHover(false);
         locked = value;
         dragging = false;
         if (locked && GetCapture() == window) ReleaseCapture();
@@ -581,15 +596,21 @@ void View::pollMouse() {
     const bool middle = (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
     const bool middlePressed = middle && !middleDown;
     middleDown = middle;
-    if (!middlePressed && !dragging) return;
+    if (!locked && !middlePressed && !dragging) return;
     POINT point;
-    GetCursorPos(&point);
-    if (middlePressed) {
+    if (!GetCursorPos(&point)) {
+        setLockedHover(false);
+        return;
+    }
+    if (locked || middlePressed) {
         const auto dpi = GetDpiForWindow(window);
         POINT client = point;
         ScreenToClient(window, &client);
         client = {MulDiv(client.x, 96, dpi), MulDiv(client.y, 96, dpi)};
-        if (PtInRect(&hotBounds, client)) {
+        const bool inside = PtInRect(&hotBounds, client);
+        // The click-through window does not receive WM_MOUSELEAVE.
+        if (locked) setLockedHover(inside);
+        if (middlePressed && inside) {
             auto data = event(L"middle-button");
             data.SetNamedValue(L"window", JsonValue::CreateNumberValue(id));
             host.send(data);

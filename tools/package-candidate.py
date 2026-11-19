@@ -24,13 +24,14 @@ def export(gui, output):
     provenance=json.loads((gui/'build-provenance.json').read_text(encoding='utf-8-sig'))
     if provenance['version']!=version or provenance['sourceCommit']!=commit:
         raise SystemExit('Candidate version/commit differs from the supplied GUI build.')
-    setup=output/f'Mineradio-Desktop-Lyrics-{version}-x64-Setup.exe'
-    if not setup.is_file():
-        raise SystemExit('Build the primary Setup.exe first.')
+    installer_names=[f'Mineradio-Desktop-Lyrics-{version}-x64-{kind}.exe' for kind in ('Setup','WebSetup')]
     installer_build=json.loads((output/'build-receipt.json').read_text(encoding='utf-8'))
-    setup_record=next((item for item in installer_build['artifacts'] if item['file']==setup.name), None)
-    if not setup_record or sha(setup.read_bytes())!=setup_record['sha256']:
-        raise SystemExit('Setup.exe differs from the installer build record.')
+    build_artifacts={item['file']:item for item in installer_build['artifacts']}
+    for name in installer_names:
+        installer=output/name
+        record=build_artifacts.get(name)
+        if not record or not installer.is_file() or installer.stat().st_size!=record['bytes'] or sha(installer.read_bytes())!=record['sha256']:
+            raise SystemExit(name+' differs from the installer build record.')
     signing=installer_build.get('signing', {'status':'unsigned'})
     if signing['status']=='verified' and gui!=(output/signing['payloadDirectory']).resolve():
         raise SystemExit('Export signed attachments from the installer build record payloadDirectory.')
@@ -69,7 +70,7 @@ def export(gui, output):
     names=set(provenance['applicationHashes'])-{'package.json'}
     names.update({'package.json','package-lock.json','README.md','LICENSE','NOTICE.md','THIRD_PARTY_NOTICES.md',
                   'build/desktop.manifest','build/runtime.json','build/licenses/NSIS-COPYING.txt',
-                  'build/installer.config.cjs','build/installer.nsh','tools/build-desktop.py',
+                  'build/installer.config.cjs','build/installer.nsh','build/connection-wizard.cs','tools/build-desktop.py',
                   'tools/build-installer.cjs','tools/windows-signing.cjs','tools/generate-icons.py','tools/package-candidate.py',
                   'CHANGELOG.md','docs/INSTALL_1.0_RC.md','docs/THIRD_PARTY_RC.md','docs/UPSTREAM_NOTICE.md','docs/WINDOWS_SIGNING.md',
                   'native/desktop.cpp','native/platform.h','native/fonts.h','vendor/overlay-preload.js','src/settings-preload.cjs',
@@ -96,12 +97,12 @@ def export(gui, output):
     shutil.copy2(root/'docs/INSTALL_1.0_RC.md',output/'安装与使用说明.md')
     shutil.copy2(root/'docs/THIRD_PARTY_RC.md',output/'第三方许可说明.md')
     shutil.copy2(root/'README.md',output/'README.md')
-    receipt={'version':version,'sourceCommit':commit,'candidateOnly':'-' in version or signing['status']!='verified',
+    receipt={'version':version,'sourceCommit':commit,'candidateOnly':'-' in version,
              'windowsSigning':signing,
              'installedOrExecutedForAcceptance':False,'sourceScope':source_manifest['scope'],
-             'artifacts':{name:{'sha256':sha((output/name).read_bytes()),'bytes':(output/name).stat().st_size} for name in [setup.name,*archive_names]}}
+             'artifacts':{name:{'sha256':sha((output/name).read_bytes()),'bytes':(output/name).stat().st_size} for name in [*installer_names,*archive_names]}}
     (output/'candidate-delivery.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    public_names={setup.name,*archive_names,'安装与使用说明.md','第三方许可说明.md','README.md','candidate-delivery.json','build-receipt.json'}
+    public_names={*installer_names,*archive_names,'安装与使用说明.md','第三方许可说明.md','README.md','candidate-delivery.json','build-receipt.json'}
     public=[file for file in output.iterdir() if file.is_file() and file.name in public_names]
     (output/'SHA256SUMS.txt').write_text(''.join(sha(file.read_bytes())+'  '+file.name+'\n' for file in sorted(public)),encoding='utf-8')
     print(json.dumps(receipt,ensure_ascii=False,indent=2))

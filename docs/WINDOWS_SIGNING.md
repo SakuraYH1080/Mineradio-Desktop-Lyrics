@@ -1,6 +1,6 @@
 # Windows 签名与 GitHub 发布
 
-Windows 的 Authenticode 签名验证发布者身份和文件完整性。GitHub 下载还会经过 SmartScreen 声誉检查。新签名的安装包在建立声誉期间仍可能提示“无法识别的应用”。正式发布使用同一受验证的发布者身份，对签名后的最终附件生成 SHA-256，并从项目 Release 提供下载。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
+Windows 的 Authenticode 签名验证发布者身份和文件完整性。GitHub 下载还会经过 SmartScreen 声誉检查。新签名的安装包在建立声誉期间仍可能提示“无法识别的应用”。签名发布时，使用同一受验证的发布者身份，对签名后的最终附件生成 SHA-256，并从项目 Release 提供下载。[微软 SmartScreen 说明](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
 ## 签名凭据
 
@@ -11,14 +11,14 @@ Windows SDK 的 x64 `signtool.exe` 会从 PATH 或已登记的 SDK 中查找。�
 
 ## 生成发布附件
 
-配置上述任一签名凭据后，从仓库根目录运行以下命令。示例使用 1.1.0-rc.5。
+配置上述任一签名凭据后，从仓库根目录运行以下命令。示例使用 1.1.0。
 
 ```powershell
-python tools/build-desktop.py --output .runtime/signing-1.1.0-rc.5
-npm run build:setup:signed -- --prepackaged .runtime/signing-1.1.0-rc.5 --output artifacts/1.1.0-rc.5-signed
-python tools/package-candidate.py --directory artifacts/1.1.0-rc.5-signed/.build/payload --release artifacts/1.1.0-rc.5-signed
+python tools/build-desktop.py --output .runtime/signing-1.1.0
+npm run build:setup:signed -- --prepackaged .runtime/signing-1.1.0 --output artifacts/1.1.0-signed
+python tools/package-candidate.py --directory artifacts/1.1.0-signed/.build/payload --release artifacts/1.1.0-signed
 ```
 
-流程会先签名主程序，再签名 NSIS 卸载器和安装器。Windows 验签通过后，正式附件才会出现在输出目录顶层。Node.js 使用上游已签名的固定二进制。便携 ZIP 使用与安装器相同的签名文件。
+流程先签名主程序和内嵌的插件向导，再签名 NSIS 卸载器与完整安装包。网络安装器嵌入已签名完整安装包的 SHA-256 后再签名。Node.js 使用上游已签名的固定二进制。便携 ZIP 使用与安装器相同的签名文件。
 
-发布前核对 `build-receipt.json` 中的 `signing.status` 为 `verified`，并核对 `signing.publisher`。在 GitHub Release 上传生成的安装包、便携包、对应源码与校验文件。安全软件给出具体威胁名称时，使用微软的软件开发者误报提交入口提供相同的最终文件。[微软文件误报提交](https://www.microsoft.com/wdsi/filesubmission)
+发布前核对 `build-receipt.json` 中的 `signing.status` 为 `verified`，并核对 `signing.publisher`。把同次构建的 `WebSetup.exe` 和 `Setup.exe` 上传到对应版本的 GitHub Release，保留生成的完整文件名，再附上便携包、对应源码与校验文件。安全软件给出具体威胁名称时，使用微软的软件开发者误报提交入口提供相同的最终文件。[微软文件误报提交](https://www.microsoft.com/wdsi/filesubmission)

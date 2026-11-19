@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const {build,Platform,Arch} = require('electron-builder');
 const root = path.resolve(__dirname,'..');
 const identity = require('../build/windows-app.json');
@@ -23,6 +24,18 @@ function walk(directory) {
 function nsisString(value) {
   if(/[\r\n]/.test(value))throw Error('Newlines are not valid in package paths');
   return value.replace(/["$]/g,character=>character==='$'?'$$':'$\\"');
+}
+function compileWizard(output, versionFile, packageManifest) {
+  const compiler = path.join(process.env.SystemRoot, 'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
+  const assemblies = ['System.Windows.Forms', 'System.Drawing', 'System.Net.Http',
+    'System.Web.Extensions', 'System.IO.Compression', 'System.IO.Compression.FileSystem'];
+  const resources = [path.join(root, 'build/connection-components.json') + ',Mineradio.Components'];
+  if (packageManifest) resources.push(packageManifest + ',Mineradio.Package');
+  execFileSync(compiler, ['/nologo', '/target:winexe', '/platform:x64', '/optimize+', '/codepage:65001',
+    '/out:' + output, '/win32icon:' + path.join(root, identity.win.icon),
+    ...assemblies.map(name => '/reference:' + name + '.dll'),
+    ...resources.map(resource => '/resource:' + resource),
+    path.join(root, 'build/connection-wizard.cs'), versionFile], { cwd: root, stdio: 'inherit', windowsHide: true });
 }
 async function main(){
   const prepackaged=arg('--prepackaged');
@@ -62,8 +75,14 @@ async function main(){
   const work=path.join(output,'.build');fs.mkdirSync(work);
   const directory = signer ? path.join(work, 'payload') : input;
   const compilerOutput = signer ? path.join(work, 'installer') : output;
+  const wizardVersion = path.join(work, 'wizard-version.cs');
+  fs.writeFileSync(wizardVersion, 'using System.Reflection;\n'
+    + `[assembly: AssemblyFileVersion(${JSON.stringify(provenance.fileVersion)})]\n`
+    + `[assembly: AssemblyInformationalVersion(${JSON.stringify(packageInfo.version)})]\n`);
+  const helper = path.join(work, 'connection-wizard.exe');
+  compileWizard(helper, wizardVersion);
   const signatures = new Map();
-  let nodeSignature;
+  let nodeSignature, wizardSignature;
   if (signer) {
     const node = path.join(input, 'resources/node.exe');
     if (hash(node) !== runtime.node.sha256) throw Error('The bundled Node executable does not match the pinned upstream build.');
@@ -71,6 +90,8 @@ async function main(){
     fs.cpSync(input, directory, { recursive: true });
     const launcher = path.join(directory, program);
     metadata.signature = signer.sign(launcher);
+    wizardSignature = signer.sign(helper);
+    if (wizardSignature.publisher !== metadata.signature.publisher) throw Error('Connection wizard publisher differs from the launcher.');
     metadata.sha256 = hash(launcher);
     provenance.executableSha256 = metadata.sha256;
     provenance.executableSignature = metadata.signature;
@@ -85,7 +106,9 @@ async function main(){
   list.push('RMDir "$INSTDIR"');
   const removeList=path.join(work,'owned-files.nsh');fs.writeFileSync(removeList,list.join('\r\n')+'\r\n');
   const include=path.join(work,'installer-generated.nsh');
-  fs.writeFileSync(include,`!define MINERADIO_REMOVE_LIST "${nsisString(removeList)}"\r\n!include "${nsisString(path.join(root,'build/installer.nsh'))}"\r\n`);
+  fs.writeFileSync(include, '!define MINERADIO_REMOVE_LIST "' + nsisString(removeList)
+    + '"\r\n!define MINERADIO_CONNECTION_HELPER "' + nsisString(helper)
+    + '"\r\n!include "' + nsisString(path.join(root, 'build/installer.nsh')) + '"\r\n');
   const buildConfig={...config,directories:{...config.directories,output:compilerOutput},nsis:{...config.nsis,include}};
   if (signer) {
     buildConfig.forceCodeSigning = true;
@@ -116,7 +139,7 @@ async function main(){
       provider: signer.provider,
       publisher: metadata.signature.publisher,
       payloadDirectory: path.relative(output, directory).replace(/\\/g, '/'),
-      installer, uninstaller, node: nodeSignature,
+      installer, uninstaller, node: nodeSignature, connectionWizard: wizardSignature,
     };
     artifacts = artifacts.map(file => {
       const final = path.join(output, path.basename(file));
@@ -128,6 +151,26 @@ async function main(){
   // public attachment list. Preserve them privately rather than deleting them.
   const debug=path.join(compilerOutput,'builder-debug.yml');
   if(fs.existsSync(debug))fs.renameSync(debug,path.join(work,'builder-debug.yml'));
+  const setup = artifacts.find(file => file.endsWith('-Setup.exe'));
+  if (!setup) throw Error('NSIS did not produce the full installer.');
+  const setupFile = path.basename(setup);
+  const packageManifest = path.join(work, 'web-package.json');
+  const releaseUrl = 'https://github.com/SakuraYH1080/Mineradio-Desktop-Lyrics/releases/download/v';
+  fs.writeFileSync(packageManifest, JSON.stringify({
+    version: packageInfo.version,
+    file: setupFile,
+    url: releaseUrl + packageInfo.version + '/' + setupFile,
+    sha256: hash(setup),
+    bytes: fs.statSync(setup).size,
+  }));
+  const webSetup = path.join(output, setupFile.replace(/-Setup\.exe$/, '-WebSetup.exe'));
+  compileWizard(webSetup, wizardVersion, packageManifest);
+  if (signer) {
+    const signature = signer.sign(webSetup);
+    if (signature.publisher !== signing.publisher) throw Error('Web installer publisher differs from the full installer.');
+    signing.webInstaller = { file: path.basename(webSetup), signature };
+  }
+  artifacts.push(webSetup);
   const receipt={version:packageInfo.version,architecture:'x64',node:provenance.nodeVersion,webview2Sdk:provenance.webview2SdkVersion,electronBuilder:require('electron-builder/package.json').version,
     sourceCommit:provenance.sourceCommit,signing,metadata,files:walk(directory).map(file=>({path:path.relative(directory,file).replace(/\\/g,'/'),sha256:hash(file)})),
     artifacts:artifacts.map(file=>({file:path.basename(file),sha256:hash(file),bytes:fs.statSync(file).size})),

@@ -64,7 +64,7 @@
       isolation:isolate;
     }
     .lyric-viewport.scrolling{mask-image:linear-gradient(90deg,transparent 0,#000 var(--lyric-mask-edge-width),#000 calc(100% - var(--lyric-mask-edge-width)),transparent 100%)}
-    body.moving .lyric-viewport.scrolling .lyric-scroll{will-change:transform}
+    body.moving:not(.paused) .lyric-viewport.scrolling .lyric-scroll{will-change:transform}
     body.unlocked .stage.hint-visible .lyric-viewport{pointer-events:auto;cursor:move;-webkit-app-region:no-drag}
     .lyric-scroll{
       display:inline-block;
@@ -213,6 +213,8 @@
     var lastDrawAt = 0;
     var layoutKey = '';
     var hoverInside = false;
+    var nativeLockedHover = false;
+    var tracksLockedHover = typeof window.desktopOverlay?.onLockedHover === 'function';
     var hintVisible = false;
     var hintTimer = 0;
     var lastPointerEvent = null;
@@ -220,7 +222,7 @@
     var layoutDpr = window.devicePixelRatio || 1;
     var live = { solar:0, beat:0, bass:0, scale:1, lift:0 };
     var state = {
-      enabled:false,text:'Mineradio',progress:0,scrollProgress:0,scrollSpan:4.8,progressSpan:4.8,progressReceivedAt:0,playing:false,
+      enabled:false,text:'Mineradio',progress:0,scrollProgress:0,scrollSpan:4.8,progressSpan:4.8,progressReceivedAt:0,playing:false,paused:false,
       playbackTime:0,playbackDuration:0,playbackRate:1,playbackReceivedAt:0,beatMapKey:'',
       size:1,opacity:.92,clickThrough:true,cinema:true,highlightFollow:false,frameRate:60,
       lyricGlow:true,lyricGlowBeat:true,lyricGlowStrength:.35,highBloom:0,beatGlow:0,beatPulse:0,bass:0,feather:.055,
@@ -749,6 +751,9 @@
       var pixel = state.highlightFollow ? lyricLayout.pixelProgress(progress) : progress;
       setRootVar('--lyric-progress', (pixel * 100).toFixed(2) + '%');
     }
+    function hasStageMotion(value) {
+      return value.enabled && (value.playing || value.paused);
+    }
     function applyState(next){
       next = next || {};
       var nowMs = performance.now();
@@ -811,15 +816,16 @@
         document.body.style.opacity = state.enabled ? String(clamp(state.opacity, .28, 1, .92)) : '0';
       }
       if (lastText === '' || state.playing !== previous.playing) document.body.classList.toggle('paused', !state.playing);
-      if (state.playing !== previous.playing || state.enabled !== previous.enabled)
-        document.body.classList.toggle('moving', state.playing && state.enabled);
+      var moving = hasStageMotion(state), previouslyMoving = hasStageMotion(previous);
+      if (moving !== previouslyMoving) document.body.classList.toggle('moving', moving);
       if (state.highlightFollow !== previous.highlightFollow)
         document.body.classList.toggle('highlight', state.highlightFollow === true);
-      if (lastText === '' || state.clickThrough !== previous.clickThrough) syncLockClasses();
-      if (!state.enabled && previous.enabled) {
+      var lockChanged = state.clickThrough !== previous.clickThrough;
+      if (lastText === '' || lockChanged) syncLockClasses();
+      if (lockChanged || visibilityChanged || (!state.enabled && previous.enabled)) {
         hideInteractionHint();
-        setPointerCapture(false);
       }
+      if (state.enabled && isLocked() && nativeLockedHover && (lockChanged || !previous.enabled)) updateHoverState(true);
       var textChanged = text !== lastText;
       if (sentenceChanged || textChanged) {
         lastText = text;
@@ -845,9 +851,13 @@
         setHighlightProgress(displayedProgress);
         updateLyricScroll(nowMs, displayedProgress);
       }
-      if ((previous.playing && !state.playing) || (!state.enabled && previous.enabled)) {
-        live = {solar:0,beat:0,bass:0,scale:1,lift:0};
-        stage.style.removeProperty('transform');
+      if ((previous.playing && !state.playing) || (previouslyMoving && !moving)) {
+        live.solar = live.beat = live.bass = 0;
+        if (!moving) {
+          live.scale = 1;
+          live.lift = 0;
+          stage.style.removeProperty('transform');
+        }
         applyLyricLighting(0, 0);
       }
       scheduleNextDraw();
@@ -940,7 +950,7 @@
       observationAt = nowMs; observationReset = d.reset; observationVisibility = state.visibilityResetSerial; observedFrames = [];
     }
     function shouldDraw() {
-      return state.enabled && (state.playing || state.diagnostic) && !document.hidden;
+      return state.enabled && (hasStageMotion(state) || state.diagnostic) && !document.hidden;
     }
     function draw(nowMs){
       frameRequest = 0;
@@ -954,10 +964,9 @@
       // Keep a target cadence independent of the display's refresh rate.
       if (!nextDrawAt || nowMs - nextDrawAt > interval * 3) nextDrawAt = nowMs;
       nextDrawAt += interval;
-      var dt = lastDrawAt ? Math.min(.12, Math.max(.001, (nowMs - lastDrawAt) / 1000)) : 1 / 60;
-      lastDrawAt = nowMs;
+      var now = nowMs * .001;
       if (state.playing) {
-        var now = nowMs * .001;
+        var dt = lastDrawAt ? Math.min(.12, Math.max(.001, (nowMs - lastDrawAt) / 1000)) : 1 / 60;
         var progress = state.highlightFollow ? currentDisplayProgress(nowMs) : 0;
         if (state.highlightFollow) setHighlightProgress(progress);
         var drawEffect = nowMs >= effectAt;
@@ -965,7 +974,10 @@
         updateMotion(now, tickDesktopBeatMap(currentDesktopPlaybackTime(nowMs), dt));
         applyStageMotion(now, drawEffect);
         updateLyricScroll(nowMs, progress);
+      } else if (state.paused) {
+        applyStageMotion(now, false);
       }
+      lastDrawAt = nowMs;
       observeDisplay(nowMs);
       scheduleNextDraw();
     }
@@ -1010,8 +1022,7 @@
       var padY = Math.max(22, Math.min(46, innerHeight * .045));
       var lyricRect = lyricViewport.getBoundingClientRect();
       if (pointInRect(evt, lyricRect, padX, padY)) return true;
-      var hintRect = lockHint.getBoundingClientRect();
-      return pointInRect(evt, hintRect, 10, 10);
+      return hintVisible && pointInRect(evt, lockHint.getBoundingClientRect(), 10, 10);
     }
     function setHintVisible(visible) {
       hintVisible = !!visible;
@@ -1032,31 +1043,30 @@
       if (hintVisible || hintTimer) return;
       hintTimer = setTimeout(function(){
         hintTimer = 0;
-        if (!hoverInside || !lastPointerEvent || !pointInStage(lastPointerEvent)) return;
+        if (!hoverInside || !state.enabled || document.hidden || (lastPointerEvent && !pointInStage(lastPointerEvent))) return;
         setHintVisible(true);
+        if (isLocked()) {
+          hintTimer = setTimeout(function(){
+            hintTimer = 0;
+            setHintVisible(false);
+          }, 2400);
+        }
       }, 1500);
     }
-    function updateHover(evt) {
-      var inside = !!state.enabled && pointInStage(evt);
-      hoverInside = inside;
-      lastPointerEvent = evt || lastPointerEvent;
-      stage.classList.toggle('hover', inside || dragging);
-      if (isLocked()) {
-        if (inside || dragging) {
-          scheduleInteractionHint();
-        } else {
-          hideInteractionHint();
-        }
-        setPointerCapture(false);
-        return inside;
-      }
-      if (inside || dragging) {
-        scheduleInteractionHint();
-      } else {
+    function updateHoverState(inside, evt) {
+      if (!inside) {
         hideInteractionHint();
+        return;
       }
-      setPointerCapture(inside || dragging);
-      return inside;
+      var entered = !hoverInside;
+      hoverInside = true;
+      lastPointerEvent = evt || null;
+      stage.classList.add('hover');
+      if (entered) scheduleInteractionHint();
+      setPointerCapture(!isLocked());
+    }
+    function updateHover(evt) {
+      if (!isLocked() || !tracksLockedHover) updateHoverState(pointInStage(evt), evt);
     }
     function setLocked(locked) {
       state.clickThrough = !!locked;
@@ -1099,16 +1109,15 @@
     window.addEventListener('mousemove', function(evt){
       if (!dragging) updateHover(evt);
     });
-    window.addEventListener('pointerleave', function(){
+    function onPointerLeave() {
       if (dragging) {
         setPointerCapture(true);
         return;
       }
-      hideInteractionHint();
-    });
-    window.addEventListener('mouseleave', function(){
-      if (!dragging) hideInteractionHint();
-    });
+      if (!isLocked() || !tracksLockedHover) hideInteractionHint();
+    }
+    window.addEventListener('pointerleave', onPointerLeave);
+    window.addEventListener('mouseleave', onPointerLeave);
     window.addEventListener('pointerdown', function(evt){
       if (!pointInStage(evt)) return;
       if (closeLyricsBtn && closeLyricsBtn.contains(evt.target)) return;
@@ -1165,7 +1174,10 @@
       applyState(data.payload || {});
     });
     window.addEventListener('resize', resize);
-    document.addEventListener('visibilitychange', scheduleNextDraw);
+    document.addEventListener('visibilitychange', function(){
+      if (document.hidden) hideInteractionHint();
+      scheduleNextDraw();
+    });
     if (typeof ResizeObserver === 'function') {
       var layoutRefreshPending = false;
       var lyricLayoutObserver = new ResizeObserver(function(){
@@ -1187,6 +1199,12 @@
         if (raw) applyState(JSON.parse(raw));
       } catch (e) {}
     })();
+    if (tracksLockedHover) {
+      window.desktopOverlay.onLockedHover(function(inside){
+        nativeLockedHover = inside;
+        if (isLocked()) updateHoverState(inside && state.enabled);
+      });
+    }
     if (window.desktopOverlay && window.desktopOverlay.onLyricsState) {
       var acknowledgedVisibilitySerial = null;
       window.desktopOverlay.onLyricsState(function(next){

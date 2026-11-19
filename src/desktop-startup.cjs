@@ -29,16 +29,16 @@ function resolveConfig(app) {
   const config=argument?legacy:{...legacy,...saved};
   const savedBase=!argument&&Object.prototype.hasOwnProperty.call(saved,'profile')?userDirectory:base;
   const explicitProfile=expandPath(config.profile,savedBase);
-  const profileCandidates=[explicitProfile,path.resolve(base,'../betterncm'),path.join(path.parse(base).root,'betterncm'),'C:\\betterncm'].filter(Boolean);
+  const betterNcmProfile=expandPath(process.env.BETTERNCM_PROFILE,base)||'C:\\betterncm';
+  const profileCandidates=[betterNcmProfile,explicitProfile,path.resolve(base,'../betterncm'),path.join(path.parse(base).root,'betterncm')].filter(Boolean);
   const selectedProfile=!argument&&saved.profile?explicitProfile:argument&&legacy.profile?explicitProfile:null;
   const profile=selectedProfile || profileCandidates.find(value=>fs.existsSync(path.join(value,'plugins_dev/MineradioBridge/index.js'))) ||
-    profileCandidates.find(value=>fs.existsSync(value)) || expandPath(config.profile,savedBase) || null;
+    profileCandidates.find(value=>fs.existsSync(value)) || betterNcmProfile;
   const autoStartClientPreference=config.autoStartClient!==false;
   return {configFile:file,userConfigFile:userFile,userDirectory,profile,
     bridgeConfig:profile?path.join(profile,'plugins_dev/MineradioBridge/connection.json'):path.join(userDirectory,'runtime/pending-bridge/connection.json'),
     clientExecutable:expandPath(config.clientExecutable,!argument&&Object.prototype.hasOwnProperty.call(saved,'clientExecutable')?userDirectory:base),
-    autoStartClientPreference,autoStartClient:autoStartClientPreference&&!process.argv.includes('--lyrics-only'),
-    acknowledgedFingerprint:typeof config.acknowledgedFingerprint==='string'?config.acknowledgedFingerprint:'',warnings};
+    autoStartClientPreference,autoStartClient:autoStartClientPreference&&!process.argv.includes('--lyrics-only'),warnings};
 }
 function windowsState() {
   const script = String.raw`
@@ -66,7 +66,7 @@ async function ensureClient(config, {record, dialog, runDir}) {
     if (players.length) {
       const matched = client && players.some(value => value.executable && identity(value.executable) === identity(client));
       record({type:'client-reused', configuredExecutable:client || null, identityConfirmed:!!matched, processes:players});
-      if (client && players.some(value => value.executable && identity(value.executable) !== identity(client)))
+      if (process.argv.includes('--configure-connection') && client && players.some(value => value.executable && identity(value.executable) !== identity(client)))
         await dialog.showMessageBox({type:'info', title:'Mineradio 桌面歌词', message:'另一位置的网易云正在运行', detail:'歌词程序不会中断音乐或重复启动客户端。请自行从网易云托盘退出后，再打开配置好的原版客户端。'});
       return;
     }
@@ -78,10 +78,11 @@ async function ensureClient(config, {record, dialog, runDir}) {
     });
   } catch (error) {
     record({type:'client-start-error', error:error.stack || error.message});
-    await dialog.showMessageBox({type:'warning', title:'Mineradio 桌面歌词', message:'未能自动连接或启动网易云', detail:error.message+'\n\n可以手动打开原版网易云，歌词程序将继续等待连接。日志：'+runDir});
+    if (process.argv.includes('--configure-connection'))
+      await dialog.showMessageBox({type:'warning', title:'Mineradio 桌面歌词', message:'未能自动连接或启动网易云', detail:error.message+'\n\n可以手动打开原版网易云，歌词程序将继续等待连接。日志：'+runDir});
   }
 }
 async function prepare(config,context){
   return require('./desktop-setup.cjs').prepare(config,{...context,powershell,windowsState,executable});
 }
-module.exports = {powershell, resolveConfig, prepare, ensureClient};
+module.exports = {powershell, executable, resolveConfig, prepare, ensureClient};
